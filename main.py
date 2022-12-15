@@ -61,6 +61,3 @@ class UserGroupNotInConfigError(Exception):
 class InvalidUserConfigError(Exception):
     def __init__(self):
         super().__init__()
-
-h = AzureSyncHandler()
-h.syncUsers()

@@ -1,8 +1,4 @@
-import os
-import grp
-import signal
 import daemon
-import lockfile
 import schedule
 import time
 
