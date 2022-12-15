@@ -47,12 +47,14 @@ class AzureSyncHandler:
         for u in azureUsers:
             if u not in linuxUsers:
                 self._linuxAdmin.addUser(u, config=self._standardUserConfig)
+                self._linuxAdmin.setUserPassword(u, self._config["Linux"]["standardPassword"])
 
         azureadUsers = self._linuxAdmin.getUsersInGroup(self._linuxUserGroupName)
-        print(azureadUsers)
-        for u in azureadUsers:
-            if u not in azureUsers:
-                self._linuxAdmin.removeUser(u)
+        if len(azureadUsers) != len(self._linuxAdmin.getUsersInGroup((self._linuxUserGroupName))):
+            for u in azureadUsers:
+                if u not in azureUsers:
+                    self._linuxAdmin.removeUser(u)
+        self._linuxAdmin.syncUsers()
 
 class UserGroupNotInConfigError(Exception):
     def __init__(self):

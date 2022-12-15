@@ -1,6 +1,7 @@
 from UserAdministration import UserAdministration
 import os
 import logging
+import crypt
 
 
 class SystemUserAdministration(UserAdministration):
@@ -83,7 +84,7 @@ class SystemUserAdministration(UserAdministration):
             for line in data:
                 shadowString = line.split(":")
                 if shadowString[0] == username:
-                    shadowString[1] = password
+                    shadowString[1] = crypt.crypt(password, crypt.mksalt(crypt.METHOD_SHA512))
                     entryString = ""
                     for s in shadowString:
                         if not s == "\n": entryString = entryString + s + ":"
@@ -131,7 +132,7 @@ class SystemUserAdministration(UserAdministration):
 
     def addGroup(self, groupname, config={}):
         self.syncGroups()
-        logging.info("Adding group " + groupname + " with config " + config)
+        logging.info("Adding group " + groupname + " with config %s", config)
         if groupname in self.getGroupnameList():
             logging.error("CRITICAL: Group already exists. Raising error.")
             raise GroupAlreadyExistsError
@@ -151,7 +152,7 @@ class UserNotExistingError(Exception):
 
     def __init__(self, userName):
         super().__init__()
-        _userName = userName
+        print(userName)
 
 
 class UserAlreadyExistsError(Exception):

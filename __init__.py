@@ -9,4 +9,4 @@ with daemon.DaemonContext():
     schedule.every(60).minutes.do(handler.syncUsers())
     while True:
         schedule.run_pending()
-        time.sleep(600) #Every 10 minutes
+        time.sleep(10) #Every 10 seconds
