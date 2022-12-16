@@ -10,11 +10,11 @@ This will be the interface to start and stop the daemon. Place in /usr/bin
 def start_daemon():
     print("Starting daemon")
     os.system("/var/adsyncd/adsyncd.py")
-    if os.path.exists("/var/run/lock/adsyncd.pid"):
+    if os.path.exists("/var/run/adsyncd.pid"):
         print("Daemon started successfully")
 def stop_daemon():
     print("Stopping daemon")
-    with open("/var/run/lock/adsyncd.pid", "r") as lockfile:
+    with open("/var/run/adsyncd.pid", "r") as lockfile:
         pid = int(lockfile.readline())
     os.kill(pid, signal.SIGTERM)
     if not os.path.exists("/var/run/lock/adsyncd.pid"):
