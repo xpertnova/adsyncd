@@ -9,7 +9,7 @@ This will be the interface to start and stop the daemon. Place in /usr/bin
 
 def start_daemon():
     print("Starting daemon")
-    os.execl("/var/adsyncd/adsyncd.py")
+    os.system("/var/adsyncd/adsyncd.py")
     if os.path.exists("/var/run/lock/adsyncd.pid"):
         print("Daemon started successfully")
 def stop_daemon():
@@ -20,6 +20,9 @@ def stop_daemon():
     if not os.path.exists("/var/run/lock/adsyncd.pid"):
         print("Daemon stopped successfully")
 
+if os.getuid() != 0:
+    print("This program must be run as root. Abotring.")
+    sys.exit()
 if sys.argv[1] == "start":
     start_daemon()
 elif sys.argv[1] == "stop":
