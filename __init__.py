@@ -3,8 +3,8 @@ import schedule
 import time
 
 #TODO Daemon scheint nicht zu funktionieren -> Cron? Daemon fixen?
-#TODO Anzeigenamen als gecos definieren in /etc/passwd
 #TODO irgendwo wird was geprintet? Die Azure Nutzer? kp...
+#TODO invalid username fix ->
 
 from main import AzureSyncHandler
 

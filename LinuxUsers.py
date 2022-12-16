@@ -38,6 +38,11 @@ class SystemUserAdministration(UserAdministration):
         self.syncUsers()
         logging.info("Adding user " + user[1] + " with config %s", config)
         if user[1] in self.getUsernameList(): raise UserAlreadyExistsError(user[1])
+        if user[1] in self.getGroupnameList(): #a user group with that name exists, remove
+            if self._DEBUG:
+                print("groupdel " + user[1])
+            else:
+                os.system("groupdel " + user[1])
         command = "useradd "
         for option in config:
             command = command + option + " "
@@ -51,17 +56,15 @@ class SystemUserAdministration(UserAdministration):
             passwdData = passwdFile.readlines()
             for line in passwdData:
                 passwdString = line.split(":")
-                print(user[1])
-                print(passwdString)
                 if passwdString[0] == user[1]:
                     passwdString[4] = user[0]
+                    entryString = ""
                     for s in passwdString:
-                        if not s == "\n":
+                        if not s.endswith("\n"):
                             entryString = entryString + s + ":"
                         else:
                             entryString = entryString + s
-                        passwdData[passwdData.index(line)] = entryString
-                        break
+                    passwdData[passwdData.index(line)] = entryString
         with open(self._passwdFile, "w") as passwdFile:
             passwdFile.writelines(passwdData)
         self.syncUsers()
@@ -73,6 +76,7 @@ class SystemUserAdministration(UserAdministration):
             print("userdel -r " + username)
         else:
             os.system("userdel -r " + username)
+            os.system("groupdel " + username)
 
     def setUserPassword(self, username, password):  # throws UserNotExistingError
         logging.info("Setting new password for user " + username)
@@ -131,6 +135,7 @@ class SystemUserAdministration(UserAdministration):
 
     def syncUsers(self):
         logging.info("Reading users from " + self._passwdFile)
+        self._users = []
         with open(self._passwdFile, "r") as passwdFile:
             for entry in passwdFile:
                 if not entry == "":
@@ -144,6 +149,7 @@ class SystemUserAdministration(UserAdministration):
                                         "shell": passwdString[6]})
 
     def syncGroups(self):
+        self._groups = []
         logging.info("Reading groups from " + self._groupFile)
         with open(self._groupFile, "r") as groupFile:
             for entry in groupFile:
@@ -152,12 +158,12 @@ class SystemUserAdministration(UserAdministration):
                     self._groups.append({"name": groupString[0], "gid": groupString[2], "members": groupString[3]})
         logging.info(str(len(self._groups)) + " groups detected")
 
-    def addGroup(self, groupname, config={}):
+    def addGroup(self, groupname, config={}): #throws GroupAlreadyExistsError
         self.syncGroups()
         logging.info("Adding group " + groupname + " with config %s", config)
         if groupname in self.getGroupnameList():
             logging.error("CRITICAL: Group already exists. Raising error.")
-            raise GroupAlreadyExistsError
+            raise GroupAlreadyExistsError(groupname)
         command = "groupadd "
         for option in config:
             command = command + option + " "
@@ -175,7 +181,7 @@ class UserNotExistingError(Exception):
 
     def __init__(self, userName):
         super().__init__()
-        print(userName)
+        print("User not existing: " + userName)
 
 
 class UserAlreadyExistsError(Exception):
@@ -183,9 +189,10 @@ class UserAlreadyExistsError(Exception):
 
     def __init__(self, userName):
         super().__init__()
-        _userName = userName
+        print("User already exists: " + userName)
 
 
 class GroupAlreadyExistsError(Exception):
-    def __init__(self):
+    def __init__(self, groupname):
         super().__init__()
+        print("Group already exists: " + groupname)

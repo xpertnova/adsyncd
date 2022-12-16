@@ -1,6 +1,6 @@
 import configparser
 import simplejson as json
-from LinuxUsers import SystemUserAdministration
+from LinuxUsers import SystemUserAdministration, UserNotExistingError, UserAlreadyExistsError
 from AzureAD import DomainUserAdministration
 import logging
 
@@ -26,7 +26,6 @@ class AzureSyncHandler:
         if config.has_option("Linux", "passwdFile"): linuxAdminConfig["passwdFile"] = config["Linux"]["passwdFile"]
         if config.has_option("Linux", "shadowFile"): linuxAdminConfig["shadowFile"] = config["Linux"]["shadowFile"]
         if config.has_option("Linux", "groupFile"): linuxAdminConfig["groupFile"] = config["Linux"]["groupFile"]
-        linuxAdminConfig["DEBUG"] = True
         self._linuxAdmin = SystemUserAdministration(**linuxAdminConfig)
         if config.has_option("Linux", "azureGroupName"): self._linuxUserGroupName = config["Linux"]["azureGroupName"]
         if config.has_option("Linux", "standardUserConfig"): self._standardUserConfig = json.loads(config["Linux"]["standardUserConfig"])
@@ -43,18 +42,28 @@ class AzureSyncHandler:
         azureUsers = self._domainAdmin.getUsernameList()
         linuxUsers = self._linuxAdmin.getUsernameList()
         if self._linuxUserGroupName not in self._linuxAdmin.getGroupnameList():
-            self._linuxAdmin.addGroup(self._linuxUserGroupName)
-
+            try:
+                self._linuxAdmin.addGroup(self._linuxUserGroupName)
+            except:
+                logging.error("Failed to create standard user group")
         for u in azureUsers:
-            if u not in linuxUsers:
-                self._linuxAdmin.addUser(u, config=self._standardUserConfig)
-                self._linuxAdmin.setUserPassword(u[1], self._config["Linux"]["standardPassword"])
-
+            if u[1] not in linuxUsers:
+                try:
+                    self._linuxAdmin.addUser(u, config=self._standardUserConfig)
+                    self._linuxAdmin.setUserPassword(u[1], self._config["Linux"]["standardPassword"])
+                except UserNotExistingError:
+                    logging.error("A user under this name does not exist. Please check if user creation is successful manually")
+                except UserAlreadyExistsError:
+                    logging.error("A user already exists under this name. Please make sure that the standard user grop name in config is correct")
         azureadUsers = self._linuxAdmin.getUsersInGroup(self._linuxUserGroupName)
         if len(azureadUsers) != len(self._linuxAdmin.getUsersInGroup((self._linuxUserGroupName))):
+            logging.info("Detected imbalance in Linux and Azure AD users. Deleting user not in Azure AD")
             for u in azureadUsers:
                 if u not in azureUsers:
-                    self._linuxAdmin.removeUser(u)
+                    try:
+                        self._linuxAdmin.removeUser(u)
+                    except UserNotExistingError:
+                        logging.error("Deleting a user was attempted, but the user couldn't be found")
         self._linuxAdmin.syncUsers()
 
 class UserGroupNotInConfigError(Exception):
