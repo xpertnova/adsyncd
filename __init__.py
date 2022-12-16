@@ -2,7 +2,6 @@ import daemon
 import schedule
 import time
 
-#TODO Daemon scheint nicht zu funktionieren -> Cron? Daemon fixen?
 #TODO invalid username fix -> invalid usernames not alowed. plain and simple.
 
 from main import AzureSyncHandler
