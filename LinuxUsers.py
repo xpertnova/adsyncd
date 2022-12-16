@@ -11,13 +11,14 @@ class SystemUserAdministration(UserAdministration):
     _groupFile = ""
     _DEBUG = False
 
-    def __init__(self, passwdFile="/etc/passwd", shadowFile="/etc/shadow", groupFile = "/etc/group", DEBUG=False):
+    def __init__(self, passwdFile="/etc/passwd", shadowFile="/etc/shadow", groupFile="/etc/group", DEBUG=False):
         super().__init__()
         self._passwdFile = passwdFile
         self._shadowFile = shadowFile
         self._groupFile = groupFile
         self._DEBUG = DEBUG
-        logging.info("System user administration initialized with passwd file " + self._passwdFile + ", shadow file " + self._shadowFile + " and group file " + self._groupFile)
+        logging.info(
+            "System user administration initialized with passwd file " + self._passwdFile + ", shadow file " + self._shadowFile + " and group file " + self._groupFile)
         self.syncUsers()
         self.syncGroups()
 
@@ -33,26 +34,45 @@ class SystemUserAdministration(UserAdministration):
             groupnames.append(g["name"])
         return groupnames
 
-    def addUser(self, username, config={"-m": None}):  # throws UserAlreadyExistsError
+    def addUser(self, user, config={"-m": None}):  #throws UserAlreadyExistsError
         self.syncUsers()
-        logging.info("Adding user " + username + " with config %s", config)
-        if username in self.getUsernameList(): raise UserAlreadyExistsError
+        logging.info("Adding user " + user[1] + " with config %s", config)
+        if user[1] in self.getUsernameList(): raise UserAlreadyExistsError(user[1])
         command = "useradd "
         for option in config:
             command = command + option + " "
             if config[option] or config[option] != "": command = command + config[option] + " "
-        command = command + username
+        command = command + user[1]
         if self._DEBUG:
             print(command)
         else:
             os.system(command)
+        with open(self._passwdFile, "r") as passwdFile:
+            passwdData = passwdFile.readlines()
+            for line in passwdData:
+                passwdString = line.split(":")
+                print(user[1])
+                print(passwdString)
+                if passwdString[0] == user[1]:
+                    passwdString[4] = user[0]
+                    for s in passwdString:
+                        if not s == "\n":
+                            entryString = entryString + s + ":"
+                        else:
+                            entryString = entryString + s
+                        passwdData[passwdData.index(line)] = entryString
+                        break
+        with open(self._passwdFile, "w") as passwdFile:
+            passwdFile.writelines(passwdData)
         self.syncUsers()
 
     def removeUser(self, username):
         logging.info("Removing user " + username)
         if username not in self.getUsernameList(): raise UserNotExistingError(username)
-        if self._DEBUG: print("userdel -r " + username)
-        else: os.system("userdel -r " + username)
+        if self._DEBUG:
+            print("userdel -r " + username)
+        else:
+            os.system("userdel -r " + username)
 
     def setUserPassword(self, username, password):  # throws UserNotExistingError
         logging.info("Setting new password for user " + username)
@@ -87,8 +107,10 @@ class SystemUserAdministration(UserAdministration):
                     shadowString[1] = crypt.crypt(password, crypt.mksalt(crypt.METHOD_SHA512))
                     entryString = ""
                     for s in shadowString:
-                        if not s == "\n": entryString = entryString + s + ":"
-                        else: entryString = entryString + s
+                        if not s == "\n":
+                            entryString = entryString + s + ":"
+                        else:
+                            entryString = entryString + s
                     data[data.index(line)] = entryString
                     break
         with open(self._shadowFile, "w") as shadowFile:
@@ -147,6 +169,7 @@ class SystemUserAdministration(UserAdministration):
             os.system(command)
         self.syncGroups()
 
+
 class UserNotExistingError(Exception):
     _userName = ""
 
@@ -161,6 +184,7 @@ class UserAlreadyExistsError(Exception):
     def __init__(self, userName):
         super().__init__()
         _userName = userName
+
 
 class GroupAlreadyExistsError(Exception):
     def __init__(self):

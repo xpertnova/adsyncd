@@ -26,6 +26,7 @@ class AzureSyncHandler:
         if config.has_option("Linux", "passwdFile"): linuxAdminConfig["passwdFile"] = config["Linux"]["passwdFile"]
         if config.has_option("Linux", "shadowFile"): linuxAdminConfig["shadowFile"] = config["Linux"]["shadowFile"]
         if config.has_option("Linux", "groupFile"): linuxAdminConfig["groupFile"] = config["Linux"]["groupFile"]
+        linuxAdminConfig["DEBUG"] = True
         self._linuxAdmin = SystemUserAdministration(**linuxAdminConfig)
         if config.has_option("Linux", "azureGroupName"): self._linuxUserGroupName = config["Linux"]["azureGroupName"]
         if config.has_option("Linux", "standardUserConfig"): self._standardUserConfig = json.loads(config["Linux"]["standardUserConfig"])
@@ -47,7 +48,7 @@ class AzureSyncHandler:
         for u in azureUsers:
             if u not in linuxUsers:
                 self._linuxAdmin.addUser(u, config=self._standardUserConfig)
-                self._linuxAdmin.setUserPassword(u, self._config["Linux"]["standardPassword"])
+                self._linuxAdmin.setUserPassword(u[1], self._config["Linux"]["standardPassword"])
 
         azureadUsers = self._linuxAdmin.getUsersInGroup(self._linuxUserGroupName)
         if len(azureadUsers) != len(self._linuxAdmin.getUsersInGroup((self._linuxUserGroupName))):
