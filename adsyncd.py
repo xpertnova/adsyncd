@@ -16,5 +16,5 @@ with daemon.DaemonContext(uid=0, gid=0, working_directory="/var/adsyncd", pidfil
     schedule.every(10).minutes.do(handler.syncUsers)  # Every 10 minutes check for new users
     while True:
         schedule.run_pending()
-        time.sleep(10)  # Every 10 seconds check if scheduled
+        time.sleep(300)  # Every 5 minutes check if scheduled
 
