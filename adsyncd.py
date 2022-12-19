@@ -7,12 +7,13 @@ import logging
 from lockfile.pidlockfile import PIDLockFile
 from AzureSyncHandler import AzureSyncHandler
 
-#Appending Python path to ./lib folder
-sys.path.append("/var/adsyncd/lib")
+
 #Creating PID lockfile
 pidfile = PIDLockFile("/var/run/adsyncd.pid")
 #Creating Daemon
 with daemon.DaemonContext(uid=0, gid=0, working_directory="/var/adsyncd", pidfile=pidfile, signal_map={signal.SIGTERM: terminate}) as context:
+    # Appending Python path to ./lib folder
+    sys.path.append("/var/adsyncd/lib")
     logging.basicConfig(filename="adsyncd.log", filemode="w",
                         format="%(asctime)s-%(process)d--%(levelname)s-%(message)s", level=logging.INFO)
     logging.info("Initializing daemon")
