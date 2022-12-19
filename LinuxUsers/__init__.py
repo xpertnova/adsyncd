@@ -145,7 +145,7 @@ class SystemUserAdministration(UserAdministration):
                                         "gecos": passwdString[4],
                                         "homeDir": passwdString[5],
                                         "shell": passwdString[6]})
-
+        logging.info("Detected " + len(self._users) + " users")
     def syncGroups(self):
         self._groups = []
         logging.info("Reading groups from " + self._groupFile)
@@ -170,8 +170,12 @@ class SystemUserAdministration(UserAdministration):
         if self._DEBUG:
             print(command)
         else:
+            logging.info("Adding group with command " + command)
             os.system(command)
         self.syncGroups()
+
+    def terminate(self):
+        logging.info("Shutting down service")
 
 
 class UserNotExistingError(Exception):

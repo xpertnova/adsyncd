@@ -13,8 +13,7 @@ class AzureSyncHandler:
     _standardUserConfig = {}
 
     def __init__(self, configFile="./config.cfg"):
-        logging.basicConfig(filename="adsyncd.log", filemode="w", format="%(asctime)s-%(process)d--%(levelname)s-%(message)s", level=logging.INFO)
-        logging.info("Initializing")
+        logging.info("Initializing sync handler")
         config = configparser.ConfigParser()
         config.read(configFile)
         self._config = config
@@ -30,7 +29,7 @@ class AzureSyncHandler:
         else: self._standardUserConfig = {"-m": None, "-g": self._linuxUserGroupName}
         if ("-g" in self._standardUserConfig and self._standardUserConfig["-g"] != self._linuxUserGroupName) or ("-G" in self._standardUserConfig and (self._linuxUserGroupName not in self._standardUserConfig["-G"])): raise UserGroupNotInConfigError
         if "-g" in self._standardUserConfig and "-G" in self._standardUserConfig: raise InvalidUserConfigError
-
+        logging.info("Sync handler initialized")
     def syncUserLists(self):
         self._linuxAdmin.syncUsers()
         self._domainAdmin.syncUsers()
