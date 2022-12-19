@@ -15,12 +15,12 @@ logging.basicConfig(filename="adsyncd.log", filemode="w",
                         format="%(asctime)s-%(process)d--%(levelname)s-%(message)s", level=logging.INFO)
 logging.info("Pre-daemonization setup")
 logHandler = logging.FileHandler("adsyncd.log")
+# Appending Python path to ./lib folder, let's hope it works...?
+sys.path.append("/var/adsyncd/lib")
 
 #Creating Daemon
 with daemon.DaemonContext(uid=0, gid=0, working_directory="/var/adsyncd", pidfile=pidfile, signal_map={signal.SIGTERM: terminate}, stderr=logHandler.stream, files_preserve=[logHandler.stream]) as context:
     logging.info("Setting up daemon")
-    # Appending Python path to ./lib folder
-    sys.path.append("/var/adsyncd/lib")
     handler = AzureSyncHandler()
     schedule.every(10).minutes.do(handler.syncUsers)  # Every 10 minutes check for new users
     while True:
