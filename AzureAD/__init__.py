@@ -41,12 +41,15 @@ class DomainUserAdministration(UserAdministration):
         }
         r = requests.get(url, headers=headers)
         result = r.json()
-        userJson = result["value"]
-        users = []
-        for u in userJson:
-            u["userPrincipalName"].replace("\n", "")
-            if not u["userPrincipalName"] in self._ignoreList: users.append([u["displayName"], u["userPrincipalName"]])
-        self._users = users
+        try:
+            userJson = result["value"]
+            users = []
+            for u in userJson:
+                u["userPrincipalName"].replace("\n", "")
+                if not u["userPrincipalName"] in self._ignoreList: users.append([u["displayName"], u["userPrincipalName"]])
+            self._users = users
+        except:
+            logging.error("Could not get AD users. Response: %s", result)
     def getUsernameList(self):
         self.syncUsers()
         users = []
