@@ -2,6 +2,7 @@ from UserAdministration import UserAdministration
 import os
 import logging
 import crypt
+from UserDefinedHooks import postUserCreationHook
 class SystemUserAdministration(UserAdministration):
     _groups = []
     _passwdFile = ""
@@ -66,6 +67,11 @@ class SystemUserAdministration(UserAdministration):
         with open(self._passwdFile, "w") as passwdFile:
             passwdFile.writelines(passwdData)
         self.syncUsers()
+        userconfig = ""
+        for u in self._users:
+            if u["username"] == user:
+                userconfig = u
+        postUserCreationHook(User(user, self, userconfig))
 
     def removeUser(self, username):
         logging.info("Removing user " + username)
@@ -178,6 +184,20 @@ class SystemUserAdministration(UserAdministration):
         logging.info("Shutting down service")
 
 
+class User:
+    def __init__(self, username, admin, properties):
+        self._username = username
+        self._admin = admin
+        self._properties = properties
+
+    def setPassword(self, passwordHash):
+        self._admin.setUserPassword(self._username, passwordHash)
+    def getGroups(self):
+        return self._admin.getGroupsForUser(self._username)
+    def getUsername(self):
+        return self._username
+    def remove(self):
+        _admin.removeUser(self._username)
 class UserNotExistingError(Exception):
     _userName = ""
 
