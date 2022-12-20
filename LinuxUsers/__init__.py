@@ -2,7 +2,6 @@ from UserAdministration import UserAdministration
 import os
 import logging
 import crypt
-from UserDefinedHooks import postUserCreationHook
 class SystemUserAdministration(UserAdministration):
     _groups = []
     _passwdFile = ""
@@ -74,6 +73,7 @@ class SystemUserAdministration(UserAdministration):
             if u["username"] == user:
                 userconfig = u
         try:
+            from UserDefinedHooks import postUserCreationHook
             postUserCreationHook(User(user, self, userconfig))
         except Exception as e:
             logging.error("Execution of post user creation hook failed with: " + str(e))
