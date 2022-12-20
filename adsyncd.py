@@ -38,7 +38,7 @@ logging.info("Pre-daemonization setup successful")
 
 #Reading config
 config = configparser.ConfigParser()
-config.read(configFile)
+config.read("/var/adsyncd/config.cfg")
 try:
     schedule_length = int(config["Daemon"]["syncInterval"])
     wait_length = int(config["Daemon"]["checkInterval"])
