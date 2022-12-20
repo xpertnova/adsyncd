@@ -14,6 +14,7 @@ from lockfile.pidlockfile import PIDLockFile
 from lockfile import AlreadyLocked
 from AzureSyncHandler import AzureSyncHandler
 
+print("adsyncd Version 0.1.1")
 #Initializing logging
 logHandler = logging.FileHandler("/var/adsyncd/adsyncd.log")
 logging.basicConfig(handlers=[logHandler],
@@ -32,7 +33,7 @@ except AlreadyLocked:
     except OSError: #No process with locked PID
         print("No processs running for lockfile, releasing lock")
 pidfile.break_lock()
-
+logging.info("adsyncd Version 0.1.1")
 logging.info("Pre-daemonization setup successful")
 
 #Adding termination handler
