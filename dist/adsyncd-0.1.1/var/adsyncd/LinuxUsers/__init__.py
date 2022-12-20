@@ -2,7 +2,6 @@ from UserAdministration import UserAdministration
 import os
 import logging
 import crypt
-from UserDefinedHooks import postUserCreationHook
 class SystemUserAdministration(UserAdministration):
     _groups = []
     _passwdFile = ""
@@ -22,12 +21,14 @@ class SystemUserAdministration(UserAdministration):
         self.syncGroups()
 
     def getUsernameList(self):
+        self.syncUsers()
         usernames = []
         for u in self._users:
             usernames.append(u["username"])
         return usernames
 
     def getGroupnameList(self):
+        self.syncGroups()
         groupnames = []
         for g in self._groups:
             groupnames.append(g["name"])
@@ -71,7 +72,11 @@ class SystemUserAdministration(UserAdministration):
         for u in self._users:
             if u["username"] == user:
                 userconfig = u
-        postUserCreationHook(User(user, self, userconfig))
+        try:
+            from UserDefinedHooks import postUserCreationHook
+            postUserCreationHook(User(user, self, userconfig))
+        except Exception as e:
+            logging.error("Execution of post user creation hook failed with: " + str(e))
 
     def removeUser(self, username):
         logging.info("Removing user " + username)
@@ -179,9 +184,6 @@ class SystemUserAdministration(UserAdministration):
             logging.info("Adding group with command " + command)
             os.system(command)
         self.syncGroups()
-
-    def terminate(self):
-        logging.info("Shutting down service")
 
 
 class User:

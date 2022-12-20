@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
-# Appending Python path to ./lib folder, let's hope it works...?
+# Appending Python path to ./lib folder
 sys.path.append("/var/adsyncd/lib")
 
 import os
@@ -10,11 +10,11 @@ import schedule
 import time
 import logging
 import signal
+import configparser
 from lockfile.pidlockfile import PIDLockFile
 from lockfile import AlreadyLocked
 from AzureSyncHandler import AzureSyncHandler
 
-print("adsyncd Version 0.1.1")
 #Initializing logging
 logHandler = logging.FileHandler("/var/adsyncd/adsyncd.log")
 logging.basicConfig(handlers=[logHandler],
@@ -36,9 +36,20 @@ pidfile.break_lock()
 logging.info("adsyncd Version 0.1.1")
 logging.info("Pre-daemonization setup successful")
 
+#Reading config
+config = configparser.ConfigParser()
+config.read("/var/adsyncd/config.cfg")
+try:
+    schedule_length = int(config["Daemon"]["syncInterval"])
+    wait_length = int(config["Daemon"]["checkInterval"])
+except Exception as e:
+    print("Error reading config: " + str(e))
+    logging.error("Error reading config: " + str(e))
+    sys.exit(1)
 #Adding termination handler
 def terminate(signum, frame):
     logging.info("Terminating daemon with SIGTERM")
+    sys.exit(0)
 
 #Adding synchronization trigger handler
 def syncnow(signum, frame):
@@ -51,9 +62,9 @@ with daemon.DaemonContext(uid=0, gid=0, working_directory="/var/adsyncd", pidfil
                         format="%(asctime)s-%(process)d--%(levelname)s-%(message)s", level=logging.INFO)
     logging.info("Setting up daemon")
     handler = AzureSyncHandler()
-    schedule.every(10).minutes.do(handler.syncUsers)  # Every 10 minutes check for new users
+    schedule.every(schedule_length).minutes.do(handler.syncUsers)
     handler.syncUsers()
     while True:
         schedule.run_pending()
-        time.sleep(300)  # Every 5 minutes check if scheduled
+        time.sleep(wait_length)
 

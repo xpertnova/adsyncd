@@ -12,16 +12,19 @@ def start_daemon():
     os.system("/var/adsyncd/adsyncd.py &")
     if os.path.exists("/var/run/adsyncd.pid"):
         print("Daemon started successfully")
+        sys.exit(0)
 def stop_daemon():
     print("Stopping daemon")
     try:
         with open("/var/run/adsyncd.pid", "r") as lockfile:
             pid = int(lockfile.readline())
         os.kill(pid, signal.SIGTERM)
-        if not os.path.exists("/var/run/adsyncd.pid"):
-            print("Daemon stopped successfully")
+        while os.path.exists("/var/run/adsyncd.pid"):
+            pass
+        print("Daemon stopped successfully")
     except:
         print("Daemon not running")
+        sys.exit(1)
 
 def trigger_sync():
     try:
@@ -31,10 +34,11 @@ def trigger_sync():
         os.kill(pid, signal.SIGUSR1)
     except:
         print("Unable to send signal to daemon")
+        sys.exit(1)
 
 if os.getuid() != 0:
     print("This program must be run as root. Abotring.")
-    sys.exit()
+    sys.exit(1)
 if sys.argv[1] == "start":
     start_daemon()
 elif sys.argv[1] == "stop":
@@ -43,3 +47,4 @@ elif sys.argv[1] == "sync":
     trigger_sync()
 else:
     print("Option not recognized. Usage: adsync start or adsync stop")
+    sys.exit(1)

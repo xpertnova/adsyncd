@@ -30,6 +30,7 @@ class AzureSyncHandler:
         if ("-g" in self._standardUserConfig and self._standardUserConfig["-g"] != self._linuxUserGroupName) or ("-G" in self._standardUserConfig and (self._linuxUserGroupName not in self._standardUserConfig["-G"])): raise UserGroupNotInConfigError
         if "-g" in self._standardUserConfig and "-G" in self._standardUserConfig: raise InvalidUserConfigError
         logging.info("Sync handler initialized")
+
     def syncUserLists(self):
         self._linuxAdmin.syncUsers()
         self._domainAdmin.syncUsers()
