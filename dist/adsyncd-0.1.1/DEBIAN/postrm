@@ -1,0 +1,7 @@
+#!/bin/bash
+#This 'DEBIAN/postrm' script is run post-removal
+if [ "$1" = purge ] || [ "$1" = remove ]
+then
+	echo "Removing /var/adsyncd and everything in it"
+	rm -rf /var/adsyncd
+fi

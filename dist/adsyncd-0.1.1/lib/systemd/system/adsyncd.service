@@ -1,0 +1,10 @@
+[Unit]
+Description=Azure AD Synchronization Daemon
+
+[Service]
+Type=forking
+ExecStart=/usr/bin/adsync start
+ExecStop=/usr/bin/adsync stop
+
+[Install]
+WantedBy=multi-user.target

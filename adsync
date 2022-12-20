@@ -18,8 +18,9 @@ def stop_daemon():
         with open("/var/run/adsyncd.pid", "r") as lockfile:
             pid = int(lockfile.readline())
         os.kill(pid, signal.SIGTERM)
-        if not os.path.exists("/var/run/adsyncd.pid"):
-            print("Daemon stopped successfully")
+        while os.path.exists("/var/run/adsyncd.pid"):
+            pass
+        print("Daemon stopped successfully")
     except:
         print("Daemon not running")
 

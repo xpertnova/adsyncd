@@ -14,7 +14,6 @@ from lockfile.pidlockfile import PIDLockFile
 from lockfile import AlreadyLocked
 from AzureSyncHandler import AzureSyncHandler
 
-print("adsyncd Version 0.1.1")
 #Initializing logging
 logHandler = logging.FileHandler("/var/adsyncd/adsyncd.log")
 logging.basicConfig(handlers=[logHandler],
@@ -39,6 +38,7 @@ logging.info("Pre-daemonization setup successful")
 #Adding termination handler
 def terminate(signum, frame):
     logging.info("Terminating daemon with SIGTERM")
+    sys.exit(0)
 
 #Adding synchronization trigger handler
 def syncnow(signum, frame):
