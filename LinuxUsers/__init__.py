@@ -180,9 +180,6 @@ class SystemUserAdministration(UserAdministration):
             os.system(command)
         self.syncGroups()
 
-    def terminate(self):
-        logging.info("Shutting down service")
-
 
 class User:
     def __init__(self, username, admin, properties):
