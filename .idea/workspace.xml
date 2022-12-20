@@ -169,7 +169,21 @@
       <option name="project" value="LOCAL" />
       <updated>1671541469384</updated>
     </task>
-    <option name="localTasksCounter" value="14" />
+    <task id="LOCAL-00014" summary="Added error handling to post user creation hook">
+      <created>1671542914134</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1671542914134</updated>
+    </task>
+    <task id="LOCAL-00015" summary="Added error handling to post user creation hook">
+      <created>1671542942557</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1671542942557</updated>
+    </task>
+    <option name="localTasksCounter" value="16" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -210,6 +224,7 @@
     <MESSAGE value="Added version identification" />
     <MESSAGE value="Some start/stop fixes&#10;Also added debian package source for reference" />
     <MESSAGE value="Removed some useless functionality" />
-    <option name="LAST_COMMIT_MESSAGE" value="Removed some useless functionality" />
+    <MESSAGE value="Added error handling to post user creation hook" />
+    <option name="LAST_COMMIT_MESSAGE" value="Added error handling to post user creation hook" />
   </component>
 </project>

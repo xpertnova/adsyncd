@@ -22,12 +22,14 @@ class SystemUserAdministration(UserAdministration):
         self.syncGroups()
 
     def getUsernameList(self):
+        self.syncUsers()
         usernames = []
         for u in self._users:
             usernames.append(u["username"])
         return usernames
 
     def getGroupnameList(self):
+        self.syncGroups()
         groupnames = []
         for g in self._groups:
             groupnames.append(g["name"])
