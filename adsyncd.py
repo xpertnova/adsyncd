@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
-# Appending Python path to ./lib folder, let's hope it works...?
+# Appending Python path to ./lib folder
 sys.path.append("/var/adsyncd/lib")
 
 import os
@@ -62,9 +62,9 @@ with daemon.DaemonContext(uid=0, gid=0, working_directory="/var/adsyncd", pidfil
                         format="%(asctime)s-%(process)d--%(levelname)s-%(message)s", level=logging.INFO)
     logging.info("Setting up daemon")
     handler = AzureSyncHandler()
-    schedule.every(schedule_length).minutes.do(handler.syncUsers)  # Every 10 minutes check for new users
+    schedule.every(schedule_length).minutes.do(handler.syncUsers)
     handler.syncUsers()
     while True:
         schedule.run_pending()
-        time.sleep(wait_length)  # Every 5 minutes check if scheduled
+        time.sleep(wait_length)
 
