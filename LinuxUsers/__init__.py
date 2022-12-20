@@ -71,7 +71,10 @@ class SystemUserAdministration(UserAdministration):
         for u in self._users:
             if u["username"] == user:
                 userconfig = u
-        postUserCreationHook(User(user, self, userconfig))
+        try:
+            postUserCreationHook(User(user, self, userconfig))
+        except Exception as e:
+            logging.info("Execution of post user creation hook failed with: " + str(e))
 
     def removeUser(self, username):
         logging.info("Removing user " + username)
