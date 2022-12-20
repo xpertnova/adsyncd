@@ -6,7 +6,10 @@
   <component name="ChangeListManager">
     <list default="true" id="069c65a5-286c-447b-b24e-e0195eb83bdf" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/LinuxUsers/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/LinuxUsers/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/UserDefinedHooks.py" beforeDir="false" afterPath="$PROJECT_DIR$/UserDefinedHooks.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/adsync" beforeDir="false" afterPath="$PROJECT_DIR$/adsync" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/adsyncd.py" beforeDir="false" afterPath="$PROJECT_DIR$/adsyncd.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/config.cfg" beforeDir="false" afterPath="$PROJECT_DIR$/config.cfg" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -183,7 +186,14 @@
       <option name="project" value="LOCAL" />
       <updated>1671542942557</updated>
     </task>
-    <option name="localTasksCounter" value="16" />
+    <task id="LOCAL-00016" summary="Fixed a bug where new users were only added after a second sync">
+      <created>1671544128344</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1671544128344</updated>
+    </task>
+    <option name="localTasksCounter" value="17" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -225,6 +235,7 @@
     <MESSAGE value="Some start/stop fixes&#10;Also added debian package source for reference" />
     <MESSAGE value="Removed some useless functionality" />
     <MESSAGE value="Added error handling to post user creation hook" />
-    <option name="LAST_COMMIT_MESSAGE" value="Added error handling to post user creation hook" />
+    <MESSAGE value="Fixed a bug where new users were only added after a second sync" />
+    <option name="LAST_COMMIT_MESSAGE" value="Fixed a bug where new users were only added after a second sync" />
   </component>
 </project>

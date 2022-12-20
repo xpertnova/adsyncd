@@ -10,6 +10,7 @@ import schedule
 import time
 import logging
 import signal
+import configparser
 from lockfile.pidlockfile import PIDLockFile
 from lockfile import AlreadyLocked
 from AzureSyncHandler import AzureSyncHandler
@@ -35,6 +36,16 @@ pidfile.break_lock()
 logging.info("adsyncd Version 0.1.1")
 logging.info("Pre-daemonization setup successful")
 
+#Reading config
+config = configparser.ConfigParser()
+config.read(configFile)
+try:
+    schedule_length = int(config["Daemon"]["syncInterval"])
+    wait_length = int(config["Daemon"]["checkInterval"])
+except Exception as e:
+    print("Error reading config: " + str(e))
+    logging.error("Error reading config: " + str(e))
+    sys.exit(1)
 #Adding termination handler
 def terminate(signum, frame):
     logging.info("Terminating daemon with SIGTERM")
@@ -51,9 +62,9 @@ with daemon.DaemonContext(uid=0, gid=0, working_directory="/var/adsyncd", pidfil
                         format="%(asctime)s-%(process)d--%(levelname)s-%(message)s", level=logging.INFO)
     logging.info("Setting up daemon")
     handler = AzureSyncHandler()
-    schedule.every(10).minutes.do(handler.syncUsers)  # Every 10 minutes check for new users
+    schedule.every(schedule_length).minutes.do(handler.syncUsers)  # Every 10 minutes check for new users
     handler.syncUsers()
     while True:
         schedule.run_pending()
-        time.sleep(300)  # Every 5 minutes check if scheduled
+        time.sleep(wait_length)  # Every 5 minutes check if scheduled
 
