@@ -1,7 +1,0 @@
-""" Set up the parameters of a TimeoutPIDLockFile.
-
-            :param path: Filesystem path to the PID file.
-            :param acquire_timeout: Value to use by default for the
-                `acquire` call.
-            :return: ``None``.
-            """
