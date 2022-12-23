@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-
+"""
+This script handles daemonization of the process.
+It is the central component of adsyncd and the core of the software distribution.
+All paths in this file are hardcoded.
+"""
 import sys
 # Appending Python path to ./lib folder
 sys.path.append("/var/adsyncd/lib")

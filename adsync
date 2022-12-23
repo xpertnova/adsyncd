@@ -1,19 +1,28 @@
 #!/usr/bin/env python3
+
+"""
+Script to interface with the Azure AD Synchronization Daemon
+Place in /usr/bin
+"""
+
+
 import os
 import sys
 import signal
 
-"""
-This will be the interface to start and stop the daemon. Place in /usr/bin
-"""
-
 def start_daemon():
+    """
+    Start adsyncd Daemon
+    """
     print("Starting daemon")
     os.system("/var/adsyncd/adsyncd.py &")
     if os.path.exists("/var/run/adsyncd.pid"):
         print("Daemon started successfully")
         sys.exit(0)
 def stop_daemon():
+    """
+    Stop adsyncd Daemon
+    """
     print("Stopping daemon")
     try:
         with open("/var/run/adsyncd.pid", "r") as lockfile:
@@ -27,6 +36,9 @@ def stop_daemon():
         sys.exit(1)
 
 def trigger_sync():
+    """
+    Send SIGUSR1 to daemon to trigger sync
+    """
     try:
         print("Triggering sync")
         with open("/var/run/adsyncd.pid", "r") as lockfile:
