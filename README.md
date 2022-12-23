@@ -10,8 +10,8 @@ Usage:
 	adsync stop - Stops daemon
 	adsync sync - Triggers sync
 	
-	Config file in /var/adsyncd/config.cfg
-	It contains various examples and instructions on how to configure the software
+Config file in /var/adsyncd/config.cfg
+It contains various examples and instructions on how to configure the software
 	
 Ships with a debian .deb package in dist/
 
