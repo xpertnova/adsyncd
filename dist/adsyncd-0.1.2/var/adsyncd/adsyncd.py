@@ -37,7 +37,7 @@ except AlreadyLocked:
     except OSError: #No process with locked PID
         print("No processs running for lockfile, releasing lock")
 pidfile.break_lock()
-logging.info("adsyncd Version 0.1.1")
+logging.info("adsyncd Version 0.1.2")
 logging.info("Pre-daemonization setup successful")
 
 #Reading config
