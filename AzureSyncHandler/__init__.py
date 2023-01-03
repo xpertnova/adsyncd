@@ -131,13 +131,16 @@ class AzureSyncHandler:
                 except UserAlreadyExistsError:
                     logging.error("A user already exists under this name. Please make sure that the standard user grop name in config is correct")
         #Get all linux users
-        azureadUsers = self.__linuxAdmin.getUsersInGroup(self.__linuxUserGroupName)
+        linuxAzureUsers = self.__linuxAdmin.getUsersInGroup(self.__linuxUserGroupName)
 
         #Check if user is to be deleted and delete
-        if len(azureadUsers) != len(azureUsers):
+        if len(linuxAzureUsers) != len(azureUsers):
             logging.info("Detected imbalance in Linux and Azure AD users. Deleting user not in Azure AD")
-            for u in azureadUsers:
-                if u not in azureUsers:
+            domainPrincipals = []
+            for u in azureUsers:
+                domainPrincipals.append(u[1])
+            for u in linuxAzureUsers:
+                if u not in domainPrincipals:
                     try:
                         self.__linuxAdmin.removeUser(u)
                     except UserNotExistingError:
