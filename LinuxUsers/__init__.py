@@ -56,11 +56,11 @@ class SystemUserAdministration(UserAdministration):
     addGroup(groupname, config={})
         Adds a group to the system
     """
-    _groups = []
-    _passwdFile = ""
-    _shadowFile = ""
-    _groupFile = ""
-    _DEBUG = False
+    __groups = []
+    __passwdFile = ""
+    __shadowFile = ""
+    __groupFile = ""
+    DEBUG = False
 
     def __init__(self, passwdFile="/etc/passwd", shadowFile="/etc/shadow", groupFile="/etc/group", DEBUG=False):
         """
@@ -78,12 +78,12 @@ class SystemUserAdministration(UserAdministration):
             Methods in this class will print commands instead of executing them if set to True, defaults to False
         """
         super().__init__()
-        self._passwdFile = passwdFile
-        self._shadowFile = shadowFile
-        self._groupFile = groupFile
-        self._DEBUG = DEBUG
+        self.__passwdFile = passwdFile
+        self.__shadowFile = shadowFile
+        self.__groupFile = groupFile
+        self.DEBUG = DEBUG
         logging.info(
-            "System user administration initialized with passwd file " + self._passwdFile + ", shadow file " + self._shadowFile + " and group file " + self._groupFile)
+            "System user administration initialized with passwd file " + self.__passwdFile + ", shadow file " + self.__shadowFile + " and group file " + self.__groupFile)
         self.syncUsers()
         self.syncGroups()
 
@@ -113,7 +113,7 @@ class SystemUserAdministration(UserAdministration):
         """
         self.syncGroups()
         groupnames = []
-        for g in self._groups:
+        for g in self.__groups:
             groupnames.append(g["name"])
         return groupnames
 
@@ -142,7 +142,7 @@ class SystemUserAdministration(UserAdministration):
         if user[1] in self.getUsernameList(): raise UserAlreadyExistsError(user[1])
         if user[1] in self.getGroupnameList():
             #A user group with that name exists, remove
-            if self._DEBUG:
+            if self.DEBUG:
                 print("groupdel " + user[1])
             else:
                 os.system("groupdel " + user[1])
@@ -155,13 +155,13 @@ class SystemUserAdministration(UserAdministration):
         command = command + user[1]
 
         #Execute command
-        if self._DEBUG:
+        if self.DEBUG:
             print(command)
         else:
             os.system(command)
 
         #Set GECOS string in passwd
-        with open(self._passwdFile, "r") as passwdFile:
+        with open(self.__passwdFile, "r") as passwdFile:
             passwdData = passwdFile.readlines()
             for line in passwdData:
                 passwdString = line.split(":")
@@ -174,7 +174,7 @@ class SystemUserAdministration(UserAdministration):
                         else:
                             entryString = entryString + s
                     passwdData[passwdData.index(line)] = entryString
-        with open(self._passwdFile, "w") as passwdFile:
+        with open(self.__passwdFile, "w") as passwdFile:
             passwdFile.writelines(passwdData)
 
         #Re-sync users and fetch userconfig for current user
@@ -211,13 +211,14 @@ class SystemUserAdministration(UserAdministration):
         """
         logging.info("Removing user " + username)
         if username not in self.getUsernameList(): raise UserNotExistingError(username)
-        if self._DEBUG:
+        if self.DEBUG:
             print("userdel -r " + username)
+            print("groupdel " + username)
         else:
             os.system("userdel -r " + username)
             os.system("groupdel " + username)
 
-    def setUserPassword(self, username, password):  # throws UserNotExistingError
+    def setUserPassword(self, username, password):
         """
         Sets a password for user
 
@@ -242,7 +243,7 @@ class SystemUserAdministration(UserAdministration):
         if not username in self.getUsernameList(): raise UserNotExistingError(username)
 
         #Check if passwd needs to be modified (if 'x' is set)
-        with open(self._passwdFile, "r") as passwdFile:
+        with open(self.__passwdFile, "r") as passwdFile:
             passwdData = passwdFile.readlines()
             for line in passwdData:
                 passwdString = line.split(":")
@@ -262,10 +263,10 @@ class SystemUserAdministration(UserAdministration):
                         break
         if modifyPasswd:
             #passwd needs to be re-written
-            with open(self._passwdFile, "w") as passwdFile:
+            with open(self.__passwdFile, "w") as passwdFile:
                 passwdFile.writelines(passwdData)
         #Set password in shadow
-        with open(self._shadowFile, "r") as shadowFile:
+        with open(self.__shadowFile, "r") as shadowFile:
             data = shadowFile.readlines()
             for line in data:
                 shadowString = line.split(":")
@@ -279,7 +280,7 @@ class SystemUserAdministration(UserAdministration):
                             entryString = entryString + s
                     data[data.index(line)] = entryString
                     break
-        with open(self._shadowFile, "w") as shadowFile:
+        with open(self.__shadowFile, "w") as shadowFile:
             shadowFile.writelines(data)
 
     def getGroupsForUser(self, username):
@@ -298,7 +299,7 @@ class SystemUserAdministration(UserAdministration):
             List of group names
         """
         groups = []
-        for g in self._groups:
+        for g in self.__groups:
             if username in g["members"]:
                 groups.append(g["name"])
         return groups
@@ -318,7 +319,7 @@ class SystemUserAdministration(UserAdministration):
         list[str]
             List of usernames in group
         """
-        for g in self._groups:
+        for g in self.__groups:
             if groupname == g["name"]:
                 return g["members"].split(",")
         return []
@@ -331,9 +332,9 @@ class SystemUserAdministration(UserAdministration):
         -------
         None
         """
-        logging.info("Reading users from " + self._passwdFile)
+        logging.info("Reading users from " + self.__passwdFile)
         self._users = []
-        with open(self._passwdFile, "r") as passwdFile:
+        with open(self.__passwdFile, "r") as passwdFile:
             for entry in passwdFile:
                 if not entry == "":
                     passwdString = entry.split(":")
@@ -353,14 +354,14 @@ class SystemUserAdministration(UserAdministration):
         -------
         None
         """
-        self._groups = []
-        logging.info("Reading groups from " + self._groupFile)
-        with open(self._groupFile, "r") as groupFile:
+        self.__groups = []
+        logging.info("Reading groups from " + self.__groupFile)
+        with open(self.__groupFile, "r") as groupFile:
             for entry in groupFile:
                 if not (entry == "" or entry == "\n"):
                     groupString = entry.split(":")
-                    self._groups.append({"name": groupString[0], "gid": groupString[2], "members": groupString[3]})
-        logging.info(str(len(self._groups)) + " groups detected")
+                    self.__groups.append({"name": groupString[0], "gid": groupString[2], "members": groupString[3]})
+        logging.info(str(len(self.__groups)) + " groups detected")
 
     def addGroup(self, groupname, config={}):
         """
@@ -393,7 +394,7 @@ class SystemUserAdministration(UserAdministration):
             command = command + option + " "
             if config[option]: command = command + config[option] + " "
         command = command + groupname
-        if self._DEBUG:
+        if self.DEBUG:
             print(command)
         else:
             logging.info("Adding group with command " + command)

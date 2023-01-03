@@ -22,17 +22,17 @@ class AzureSyncHandler:
 
     Attributes
     ----------
-    _config : configparser.ConfigParser
+    __config : configparser.ConfigParser
         Config parsed from config.cfg file
-    _blockedUsers : list[str]
+    __blockedUsers : list[str]
         Users in ignore list
-    _linuxAdmin : LinuxUsers.SystemUserAdministration
+    __linuxAdmin : LinuxUsers.SystemUserAdministration
         Linux user administration handler
-    _domainAdmin : AzureAD.DomainUserAdministration
+    __domainAdmin : AzureAD.DomainUserAdministration
         Domain user synchronization handler
-    _linuxUserGroupName : str
+    __linuxUserGroupName : str
         Name of the Linux user group for Azure AD user
-    _standardUserConfig : dict{str:str}
+    __standardUserConfig : dict{str:str}
         Default config for 'useradd'
 
     Methods
@@ -42,12 +42,12 @@ class AzureSyncHandler:
     syncUserLists()
         Syncs the lists of Linux and Domain users
     """
-    _config = None
-    _blockedUsers = []
-    _linuxAdmin = None
-    _domainAdmin = None
-    _linuxUserGroupName = "azuread"
-    _standardUserConfig = {}
+    __config = None
+    __blockedUsers = []
+    __linuxAdmin = None
+    __domainAdmin = None
+    __linuxUserGroupName = "azuread"
+    __standardUserConfig = {}
 
     def __init__(self, configFile="./config.cfg"):
         """
@@ -72,9 +72,9 @@ class AzureSyncHandler:
         #Read config
         config = configparser.ConfigParser()
         config.read(configFile)
-        self._config = config
-        self._blockedUsers = config["Users"]["blockedPrincipals"].split(", ")
-        self._domainAdmin = DomainUserAdministration(config["Azure"]["clientId"], config["Azure"]["clientSecret"], self._blockedUsers)
+        self.__config = config
+        self.__blockedUsers = config["Users"]["blockedPrincipals"].split(", ")
+        self.__domainAdmin = DomainUserAdministration(config["Azure"]["clientId"], config["Azure"]["clientSecret"], self.__blockedUsers)
         linuxAdminConfig = {}
 
         #Set system file paths
@@ -83,12 +83,12 @@ class AzureSyncHandler:
         if config.has_option("Linux", "groupFile"): linuxAdminConfig["groupFile"] = config["Linux"]["groupFile"]
 
         #Initialize Linux user handler and check if config is valid (only partially)
-        self._linuxAdmin = SystemUserAdministration(**linuxAdminConfig)
-        if config.has_option("Linux", "azureGroupName"): self._linuxUserGroupName = config["Linux"]["azureGroupName"]
-        if config.has_option("Linux", "standardUserConfig"): self._standardUserConfig = json.loads(config["Linux"]["standardUserConfig"])
-        else: self._standardUserConfig = {"-m": None, "-g": self._linuxUserGroupName}
-        if ("-g" in self._standardUserConfig and self._standardUserConfig["-g"] != self._linuxUserGroupName) or ("-G" in self._standardUserConfig and (self._linuxUserGroupName not in self._standardUserConfig["-G"])): raise UserGroupNotInConfigError
-        if "-g" in self._standardUserConfig and "-G" in self._standardUserConfig: raise InvalidUserConfigError
+        self.__linuxAdmin = SystemUserAdministration(**linuxAdminConfig)
+        if config.has_option("Linux", "azureGroupName"): self.__linuxUserGroupName = config["Linux"]["azureGroupName"]
+        if config.has_option("Linux", "standardUserConfig"): self.__standardUserConfig = json.loads(config["Linux"]["standardUserConfig"])
+        else: self.__standardUserConfig = {"-m": None, "-g": self.__linuxUserGroupName}
+        if ("-g" in self.__standardUserConfig and self.__standardUserConfig["-g"] != self.__linuxUserGroupName) or ("-G" in self.__standardUserConfig and (self.__linuxUserGroupName not in self.__standardUserConfig["-G"])): raise UserGroupNotInConfigError
+        if "-g" in self.__standardUserConfig and "-G" in self.__standardUserConfig: raise InvalidUserConfigError
         logging.info("Sync handler initialized")
 
     def syncUserLists(self):
@@ -99,8 +99,8 @@ class AzureSyncHandler:
         -------
         None
         """
-        self._linuxAdmin.syncUsers()
-        self._domainAdmin.syncUsers()
+        self.__linuxAdmin.syncUsers()
+        self.__domainAdmin.syncUsers()
 
     def syncUsers(self):
         """
@@ -111,12 +111,12 @@ class AzureSyncHandler:
         None
         """
         logging.info("Syncing users - users not in AzureAD will be removed from system")
-        azureUsers = self._domainAdmin.getUsernameList()
-        linuxUsers = self._linuxAdmin.getUsernameList()
+        azureUsers = self.__domainAdmin.getUsernameList()
+        linuxUsers = self.__linuxAdmin.getUsernameList()
         #Check if user group exists
-        if self._linuxUserGroupName not in self._linuxAdmin.getGroupnameList():
+        if self.__linuxUserGroupName not in self.__linuxAdmin.getGroupnameList():
             try:
-                self._linuxAdmin.addGroup(self._linuxUserGroupName)
+                self.__linuxAdmin.addGroup(self.__linuxUserGroupName)
             except:
                 logging.error("Failed to create standard user group")
 
@@ -124,26 +124,26 @@ class AzureSyncHandler:
         for u in azureUsers:
             if u[1] not in linuxUsers:
                 try:
-                    self._linuxAdmin.addUser(u, config=self._standardUserConfig)
-                    self._linuxAdmin.setUserPassword(u[1], self._config["Linux"]["standardPassword"])
+                    self.__linuxAdmin.addUser(u, config=self.__standardUserConfig)
+                    self.__linuxAdmin.setUserPassword(u[1], self.__config["Linux"]["standardPassword"])
                 except UserNotExistingError:
                     logging.error("A user under this name does not exist. Please check if user creation is successful manually")
                 except UserAlreadyExistsError:
                     logging.error("A user already exists under this name. Please make sure that the standard user grop name in config is correct")
         #Get all linux users
-        azureadUsers = self._linuxAdmin.getUsersInGroup(self._linuxUserGroupName)
+        azureadUsers = self.__linuxAdmin.getUsersInGroup(self.__linuxUserGroupName)
 
         #Check if user is to be deleted and delete
-        if len(azureadUsers) != len(self._linuxAdmin.getUsersInGroup((self._linuxUserGroupName))):
+        if len(azureadUsers) != len(self.__linuxAdmin.getUsersInGroup((self.__linuxUserGroupName))):
             logging.info("Detected imbalance in Linux and Azure AD users. Deleting user not in Azure AD")
             for u in azureadUsers:
                 if u not in azureUsers:
                     try:
-                        self._linuxAdmin.removeUser(u)
+                        self.__linuxAdmin.removeUser(u)
                     except UserNotExistingError:
                         logging.error("Deleting a user was attempted, but the user couldn't be found")
         #Re-sync Linux users
-        self._linuxAdmin.syncUsers()
+        self.__linuxAdmin.syncUsers()
 
 class UserGroupNotInConfigError(Exception):
     """
