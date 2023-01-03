@@ -134,7 +134,7 @@ class AzureSyncHandler:
         azureadUsers = self.__linuxAdmin.getUsersInGroup(self.__linuxUserGroupName)
 
         #Check if user is to be deleted and delete
-        if len(azureadUsers) != len(self.__linuxAdmin.getUsersInGroup((self.__linuxUserGroupName))):
+        if len(azureadUsers) != len(azureUsers):
             logging.info("Detected imbalance in Linux and Azure AD users. Deleting user not in Azure AD")
             for u in azureadUsers:
                 if u not in azureUsers:
