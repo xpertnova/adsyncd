@@ -12,7 +12,7 @@ class UserAdministration:
 
     Attributes
     ----------
-    _users : list[str]
+    __users : list[str]
         List of users
 
     Methods
@@ -24,7 +24,7 @@ class UserAdministration:
     userExists(username)
         Check if user exists
     """
-    _users = []
+    __users = []
     def __init__(self):
         """
         Constructor

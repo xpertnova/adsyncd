@@ -1,0 +1,14 @@
+#!/bin/bash
+# Filename:      postinst
+# Purpose:       postinst script for package adsyncd
+# Authors:       Lovis König <lovis.koenig@xpertnova.de>
+################################################################################
+if [ "$1" = upgrade ]
+then
+  rm /var/adsyncd/config.cfg
+  mv /tmp/adsyncd-config.cfg /var/adsyncd/config.cfg
+fi
+echo "Setting permissions to 740 for /var/adsyncd"
+chmod -R 740 /var/adsyncd
+echo "Reloading systemd-daemons"
+systemctl daemon-reload

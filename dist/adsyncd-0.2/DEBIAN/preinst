@@ -1,0 +1,9 @@
+#!/bin/bash
+# Filename:      preinst
+# Purpose:       preinst script for package adsyncd
+# Authors:       Lovis König <lovis.koenig@xpertnova.de>
+################################################################################
+if [ "$1" = upgrade ]
+then
+  cp /var/adsyncd/config.cfg /tmp/adsyncd-config.cfg
+fi

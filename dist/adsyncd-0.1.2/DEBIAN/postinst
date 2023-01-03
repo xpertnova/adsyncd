@@ -1,3 +1,0 @@
-#!/bin/bash
-echo "Reloading systemd-daemons"
-systemctl daemon-reload

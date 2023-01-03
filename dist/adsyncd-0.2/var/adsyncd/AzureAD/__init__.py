@@ -21,55 +21,55 @@ class DomainUserAdministration(UserAdministration):
 
     Attributes
     ----------
-    _clientID : str
+    __clientID : str
         Azure AD client ID
-    _clientSecret : str
+    __clientSecret : str
         Azure AD client secret
-    _token : str
+    __token : str
         Azure AD client token to be retrieved from Azure
-    _ignoreList : list[str]
+    __ignoreList : list[str]
         List of to be ignored principals
 
     Methods
     -------
-    getApiToken()
+    fetchApiToken()
         Get API token from Azure AD
     syncUsers()
         Get users from Azure AD
     getUsernameList()
-        Returns list of users in Azure AD (which are not in the ignoreList)
-    setIgnoreList(ignoreList)
+        Returns list of users in Azure AD (which are not in the ignore_list)
+    setIgnoreList(ignore_list)
         Sets a new ignore list
     """
-    _clientId = ""
-    _clientSecret = ""
-    _token = ""
-    _ignoreList = []
+    __clientId = ""
+    __clientSecret = ""
+    __token = ""
+    __ignoreList = []
 
-    def __init__(self, clientId, clientSecret, ignoreList=[]):
+    def __init__(self, client_id, client_secret, ignore_list=[]):
         """
         Constructor
 
         Parameters
         ----------
-        clientId : str
+        client_id : str
             Azure AD client ID
-        clientSecret : str
+        client_secret : str
             Azure AD client ID
-        ignoreList : list[str]
+        ignore_list : list[str]
             List of to be ignored principals
         """
         super().__init__()
-        self._clientId = clientId
-        self._clientSecret = clientSecret
-        self._ignoreList = ignoreList
-        self.getApiToken()
+        self.__clientId = client_id
+        self.__clientSecret = client_secret
+        self.__ignoreList = ignore_list
+        self.fetchApiToken()
         self.syncUsers()
 
-    def getApiToken(self):
+    def fetchApiToken(self):
         """
         Get API token from Azure AD
-        Requires valid clientId and clientSecret to be successful
+        Requires valid client_id and client_secret to be successful
 
         Returns
         -------
@@ -79,12 +79,12 @@ class DomainUserAdministration(UserAdministration):
         url = 'https://login.microsoftonline.com/xpertnovade.onmicrosoft.com/oauth2/v2.0/token'
         data = {
             'grant_type': 'client_credentials',
-            'client_id': self._clientId,
+            'client_id': self.__clientId,
             'scope': 'https://graph.microsoft.com/.default',
-            'client_secret': self._clientSecret
+            'client_secret': self.__clientSecret
         }
         r = requests.post(url, data=data)
-        self._token = r.json().get('access_token')
+        self.__token = r.json().get('access_token')
         logging.info("Token retrieved")
 
     def syncUsers(self):
@@ -101,7 +101,7 @@ class DomainUserAdministration(UserAdministration):
         url = 'https://graph.microsoft.com/v1.0/users'
         headers = {
             'Content-Type': 'application\json',
-            'Authorization': 'Bearer {}'.format(self._token)
+            'Authorization': 'Bearer {}'.format(self.__token)
         }
         r = requests.get(url, headers=headers)
         result = r.json()
@@ -110,16 +110,18 @@ class DomainUserAdministration(UserAdministration):
             users = []
             for u in userJson:
                 u["userPrincipalName"].replace("\n", "")
-                if not u["userPrincipalName"] in self._ignoreList: users.append([u["displayName"], u["userPrincipalName"]])
+                if not u["userPrincipalName"] in self.__ignoreList: users.append(
+                    [u["displayName"], u["userPrincipalName"]])
             self._users = users
         except:
             logging.error("Could not get AD users. Response: %s", result)
             logging.info("Trying again with new API token")
-            self.getApiToken()
+            self.fetchApiToken()
             self.syncUsers()
+
     def getUsernameList(self):
         """
-        Returns list of users with names and principals in Azure AD (which are not in the ignoreList)
+        Returns list of users with names and principals in Azure AD (which are not in the ignore_list)
 
         Returns
         -------
@@ -145,4 +147,4 @@ class DomainUserAdministration(UserAdministration):
         -------
         None
         """
-        self._ignoreList = ignoreList
+        self.__ignoreList = ignoreList
