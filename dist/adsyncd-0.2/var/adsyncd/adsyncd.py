@@ -14,6 +14,7 @@ import daemon
 import schedule
 import time
 import logging
+from logging.handlers import TimedRotatingFileHandler
 import signal
 import configparser
 from lockfile.pidlockfile import PIDLockFile
@@ -32,7 +33,7 @@ except Exception as e:
     sys.exit(1)
 
 # Initializing logging
-logHandler = logging.TimedRotatingFileHandler(filename="/var/adsyncd/adsyncd.log", when="D", interval=1,
+logHandler = TimedRotatingFileHandler(filename="/var/adsyncd/adsyncd.log", when="D", interval=1,
                                               backupCount=backup_count)
 logging.basicConfig(handlers=[logHandler],
                     format="%(asctime)s-%(process)d--%(levelname)s-%(message)s", level=logging.INFO)
