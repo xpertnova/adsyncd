@@ -359,6 +359,7 @@ class SystemUserAdministration(UserAdministration):
         with open(self.__groupFile, "r") as groupFile:
             for entry in groupFile:
                 if not (entry == "" or entry == "\n"):
+                    entry = entry.replace("\n", "")
                     groupString = entry.split(":")
                     self.__groups.append({"name": groupString[0], "gid": groupString[2], "members": groupString[3]})
         logging.info(str(len(self.__groups)) + " groups detected")
