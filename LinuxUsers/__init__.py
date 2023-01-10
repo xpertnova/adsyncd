@@ -117,7 +117,7 @@ class SystemUserAdministration(UserAdministration):
             groupnames.append(g["name"])
         return groupnames
 
-    def addUser(self, user, config={"-m": None}):  #throws UserAlreadyExistsError
+    def addUser(self, user, config={"-m": None}):
         """
         Adds a user to the system
 
