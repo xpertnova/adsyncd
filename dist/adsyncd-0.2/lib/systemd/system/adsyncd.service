@@ -1,10 +1,15 @@
 [Unit]
 Description=Azure AD Synchronization Daemon
 
+StartLimitIntervalSec=500
+StartLimitBurst=5
+
 [Service]
 Type=forking
 ExecStart=/usr/bin/adsync start
 ExecStop=/usr/bin/adsync stop
+Restart=on-failure
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
