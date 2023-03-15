@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-Script to interface with the Azure AD Synchronization Daemon
+Script to interface with the Azure AD Synchronization Daemon in Unix systems.
 Place in /usr/bin
 """
 

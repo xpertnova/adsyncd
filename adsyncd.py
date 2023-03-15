@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-This script handles daemonization of the process.
+This script handles daemonization of the process in Unix systems.
 It is the central component of adsyncd and the core of the software distribution.
 All paths in this file are hardcoded.
 """
@@ -50,7 +50,7 @@ except AlreadyLocked:
     except OSError:  # No process with locked PID
         print("No processs running for lockfile, releasing lock")
 pidfile.break_lock()
-logging.info("adsyncd Version 0.2")
+logging.info("adsyncd for Unix Version 0.2")
 logging.info("Pre-daemonization setup successful")
 
 

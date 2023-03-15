@@ -1,7 +1,7 @@
 """
-Linux User Administration
+Windows User Administration
 
-Handles Linux user administration
+Handles Windows user administration
 
 Classes:
     SystemUserAdministration - Class to handle Linux user administration
@@ -17,20 +17,17 @@ from UserAdministration import UserAdministration, GroupAlreadyExistsError, User
 import os
 import logging
 import crypt
+import subprocess
 class SystemUserAdministration(UserAdministration):
     """
-    Class to handle Linux user administration
+    Class to handle Windows user administration
+
+    Will create and delete users in sync with Azure AD users in a AD domain
 
     Attributes
     ----------
     _groups : list[str]
         Groups in system
-    _passwdFile : str
-        Path to passwd file
-    _shadowFile : str
-        Path to shadow file
-    _groupFile : str
-        Path to group file
     _DEBUG : bool
         Methods in this class will print commands instead of executing them if set to True
 
@@ -57,13 +54,8 @@ class SystemUserAdministration(UserAdministration):
     addGroup(groupname, config={})
         Adds a group to the system
     """
-    __groups = []
-    __passwdFile = ""
-    __shadowFile = ""
-    __groupFile = ""
-    DEBUG = False
 
-    def __init__(self, passwdFile="/etc/passwd", shadowFile="/etc/shadow", groupFile="/etc/group", DEBUG=False):
+    def __init__(self, DEBUG=False):
         """
         Constructor
 
@@ -79,12 +71,9 @@ class SystemUserAdministration(UserAdministration):
             Methods in this class will print commands instead of executing them if set to True, defaults to False
         """
         super().__init__()
-        self.__passwdFile = passwdFile
-        self.__shadowFile = shadowFile
-        self.__groupFile = groupFile
         self.DEBUG = DEBUG
         logging.info(
-            "System user administration for Linux initialized with passwd file " + self.__passwdFile + ", shadow file " + self.__shadowFile + " and group file " + self.__groupFile)
+            "System user administration for Windows initialized")
         self.syncUsers()
         self.syncGroups()
 
@@ -118,7 +107,7 @@ class SystemUserAdministration(UserAdministration):
             groupnames.append(g["name"])
         return groupnames
 
-    def addUser(self, user, config={"-m": None}):
+    def addUser(self, user, config={}):
         """
         Adds a user to the system
 
