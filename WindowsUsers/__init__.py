@@ -14,10 +14,11 @@ Classes:
 
 from UserAdministration import UserAdministration, GroupAlreadyExistsError, UserNotExistingError, User, \
     UserAlreadyExistsError
-import os
+
 import logging
-import crypt
 import subprocess
+import simplejson as json
+
 class SystemUserAdministration(UserAdministration):
     """
     Class to handle Windows user administration
@@ -28,6 +29,8 @@ class SystemUserAdministration(UserAdministration):
     ----------
     _groups : list[str]
         Groups in system
+    _users : list[dict{str:str}]
+        Users in system
     _DEBUG : bool
         Methods in this class will print commands instead of executing them if set to True
 
@@ -55,7 +58,7 @@ class SystemUserAdministration(UserAdministration):
         Adds a group to the system
     """
 
-    def __init__(self, DEBUG=False):
+    def __init__(self, DEBUG=False, RemovePrincipalAffix=False):
         """
         Constructor
 
@@ -72,6 +75,7 @@ class SystemUserAdministration(UserAdministration):
         """
         super().__init__()
         self.DEBUG = DEBUG
+        self._RemovePrincipalAffix = RemovePrincipalAffix
         logging.info(
             "System user administration for Windows initialized")
         self.syncUsers()
@@ -130,42 +134,19 @@ class SystemUserAdministration(UserAdministration):
         self.syncUsers()
         logging.info("Adding user " + user[1] + " with config %s", config)
         if user[1] in self.getUsernameList(): raise UserAlreadyExistsError(user[1])
-        if user[1] in self.getGroupnameList():
-            #A user group with that name exists, remove
-            if self.DEBUG:
-                print("groupdel " + user[1])
-            else:
-                os.system("groupdel " + user[1])
 
         #Composing command
-        command = "useradd "
+        command = "New-ADUser -UserPrincipalName " + user[1] + " -DisplayName \"" + user[0] + " "
         for option in config:
             command = command + option + " "
             if config[option] or config[option] != "": command = command + config[option] + " "
-        command = command + user[1]
 
         #Execute command
         if self.DEBUG:
             print(command)
         else:
-            os.system(command)
-
-        #Set GECOS string in passwd
-        with open(self.__passwdFile, "r") as passwdFile:
-            passwdData = passwdFile.readlines()
-            for line in passwdData:
-                passwdString = line.split(":")
-                if passwdString[0] == user[1]:
-                    passwdString[4] = user[0]
-                    entryString = ""
-                    for s in passwdString:
-                        if not s.endswith("\n"):
-                            entryString = entryString + s + ":"
-                        else:
-                            entryString = entryString + s
-                    passwdData[passwdData.index(line)] = entryString
-        with open(self.__passwdFile, "w") as passwdFile:
-            passwdFile.writelines(passwdData)
+            subprocess.run(
+                ["powershell", "-Command", command])
 
         #Re-sync users and fetch userconfig for current user
         self.syncUsers()
@@ -173,7 +154,7 @@ class SystemUserAdministration(UserAdministration):
 
         #Execute post-user creation hook, defined in UserCreatedHooks.py
         for u in self._users:
-            if u["username"] == user:
+            if u["Username"] == user:
                 userconfig = u
         try:
             from UserDefinedHooks import postUserCreationHook
@@ -201,12 +182,12 @@ class SystemUserAdministration(UserAdministration):
         """
         logging.info("Removing user " + username)
         if username not in self.getUsernameList(): raise UserNotExistingError(username)
+        command = "Get-ADUser -Filter 'UserPrincipalName -eq \"" + username + "\"' | Remove-ADUser -Confirm:$false"
         if self.DEBUG:
-            print("userdel -r " + username)
-            print("groupdel " + username)
+            print(command)
         else:
-            os.system("userdel -r " + username)
-            os.system("groupdel " + username)
+            subprocess.run(
+                ["powershell", "-Command", command])
 
     def setUserPassword(self, username, password):
         """
@@ -228,50 +209,17 @@ class SystemUserAdministration(UserAdministration):
         UserNotExistingError
             User does not exist and their password cannot be set
         """
+        if not (username in self.getUsernameList()): raise UserNotExistingError(username)
         logging.info("Setting new password for user " + username)
-        modifyPasswd = False
-        if not username in self.getUsernameList(): raise UserNotExistingError(username)
+        command = "Get-ADUser -Filter 'UserPrincipalName -eq \"" + username + \
+                  "\"Set-ADAccountPassword -Reset -NewPassword (ConvertTo-SecureString -AsPlainText \"" + password + \
+                  "\" -Force)"
 
-        #Check if passwd needs to be modified (if 'x' is set)
-        with open(self.__passwdFile, "r") as passwdFile:
-            passwdData = passwdFile.readlines()
-            for line in passwdData:
-                passwdString = line.split(":")
-                if passwdString[0] == username:
-                    if passwdString[1] != "x":
-                        passwdString[1] = "x"
-                        entryString = ""
-                        for s in passwdString:
-                            if not s == "\n":
-                                entryString = entryString + s + ":"
-                            else:
-                                entryString = entryString + s
-                        passwdData[passwdData.index(line)] = entryString
-                        modifyPasswd = True
-                        break
-                    else:
-                        break
-        if modifyPasswd:
-            #passwd needs to be re-written
-            with open(self.__passwdFile, "w") as passwdFile:
-                passwdFile.writelines(passwdData)
-        #Set password in shadow
-        with open(self.__shadowFile, "r") as shadowFile:
-            data = shadowFile.readlines()
-            for line in data:
-                shadowString = line.split(":")
-                if shadowString[0] == username:
-                    shadowString[1] = crypt.crypt(password, crypt.mksalt(crypt.METHOD_SHA512))
-                    entryString = ""
-                    for s in shadowString:
-                        if not s == "\n":
-                            entryString = entryString + s + ":"
-                        else:
-                            entryString = entryString + s
-                    data[data.index(line)] = entryString
-                    break
-        with open(self.__shadowFile, "w") as shadowFile:
-            shadowFile.writelines(data)
+        if self.DEBUG:
+            print(command)
+        else:
+            subprocess.run(
+                ["powershell", "-Command", command])
 
     def getGroupsForUser(self, username):
         """
@@ -288,11 +236,18 @@ class SystemUserAdministration(UserAdministration):
         list[str]
             List of group names
         """
-        groups = []
-        for g in self.__groups:
-            if username in g["members"]:
-                groups.append(g["name"])
-        return groups
+        return_array = []
+        result = subprocess.run(
+            ["powershell", "-Command",
+             "Get-ADPrincipalGroupMembership " + username +
+             " | Select-Object name | ConvertTo-Json"],
+            capture_output=True)
+        groups = json.loads(result)
+        for group in groups:
+            return_array.append(group["name"])
+        return return_array
+
+        return return_array
 
     def getUsersInGroup(self, groupname):
         """
@@ -311,7 +266,16 @@ class SystemUserAdministration(UserAdministration):
         """
         for g in self.__groups:
             if groupname == g["name"]:
-                return g["members"].split(",")
+                return_array = []
+                result = subprocess.run(
+                    ["powershell", "-Command",
+                     "Get-ADGroupMember " + groupname +
+                     " | Get-ADUser | Select-Object UserPrincipalName | ConvertTo-Json"],
+                    capture_output=True)
+                users = json.loads(result)
+                for user in users:
+                    return_array.append(user["UserPrincipalName"])
+                return return_array
         return []
 
     def syncUsers(self):
@@ -322,39 +286,44 @@ class SystemUserAdministration(UserAdministration):
         -------
         None
         """
-        logging.info("Reading users from " + self.__passwdFile)
+        logging.info("Reading users from PowerShell command line")
         self._users = []
-        with open(self.__passwdFile, "r") as passwdFile:
-            for entry in passwdFile:
-                if not entry == "":
-                    passwdString = entry.split(":")
-                    self._users.append({"username": passwdString[0],
-                                        "hasPassword": (True if passwdString[1] == "x" else False),
-                                        "uid": passwdString[2],
-                                        "gid": passwdString[3],
-                                        "gecos": passwdString[4],
-                                        "homeDir": passwdString[5],
-                                        "shell": passwdString[6]})
+        result = subprocess.run(
+            ["powershell", "-Command",
+             "Get-ADUser -Filter * | Select-Object UserPrincipalName, Enabled, Name | ConvertTo-Json"],
+            capture_output=True)
+        users = json.loads(result)
+        if isinstance(users, list):
+            for user in users:
+                self._users.append({"Username": user["UserPrincipalName"],
+                                    "Enabled": user["Enabled"],
+                                    "Name": user["Name"]})
+        else:
+            self._users.append({"Username": users["UserPrincipalName"],
+                                "Enabled": users["Enabled"],
+                                "Name": users["Name"]})
         logging.info("Detected " + str(len(self._users)) + " users")
     def syncGroups(self):
         """
-        Read groups from group file
+        Read AD groups from PowerShell
 
         Returns
         -------
         None
         """
+        result = subprocess.run(
+            ["powershell", "-Command", "Get-ADGroup -Filter * | Select-Object Name | ConvertTo-Json"],
+            capture_output=True)
+        groups = json.loads(result)
         self.__groups = []
-        logging.info("Reading groups from " + self.__groupFile)
-        with open(self.__groupFile, "r") as groupFile:
-            for entry in groupFile:
-                if not (entry == "" or entry == "\n"):
-                    entry = entry.replace("\n", "")
-                    groupString = entry.split(":")
-                    self.__groups.append({"name": groupString[0], "gid": groupString[2], "members": groupString[3]})
-        logging.info(str(len(self.__groups)) + " groups detected")
+        if isinstance(groups, list):
+            for group in groups:
+                self.__groups.append({"name": group["Name"], "members": []})
+        else:
+            self.__groups.append({"name": groups["Name"], "members": []})
 
-    def addGroup(self, groupname, config={}):
+
+    def addGroup(self, groupname, config=None):
         """
         Adds a group to the system
 
@@ -374,20 +343,22 @@ class SystemUserAdministration(UserAdministration):
         GroupAlreadyExistsError
             Group already exists and cannot be created
         """
+        if config is None:
+            config = {"GroupCategory": "Security", "GroupScope": "Global", "Description": "Created by adsyncd"}
         self.syncGroups()
         logging.info("Adding group " + groupname + " with config %s", config)
         if groupname in self.getGroupnameList():
             logging.error("CRITICAL: Group already exists. Raising error.")
             raise GroupAlreadyExistsError(groupname)
         #Composing command
-        command = "groupadd "
+        command = "New-ADGroup "
         for option in config:
-            command = command + option + " "
+            command = command + "-" + option + " "
             if config[option]: command = command + config[option] + " "
-        command = command + groupname
+        command = command + "-Name " + groupname
         if self.DEBUG:
             print(command)
         else:
             logging.info("Adding group with command " + command)
-            os.system(command)
+            subprocess.run(["powershell", "-Command", command])
         self.syncGroups()

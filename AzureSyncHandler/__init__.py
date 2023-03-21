@@ -28,7 +28,7 @@ class AzureSyncHandler:
         Config parsed from config.cfg file
     __blockedUsers : list[str]
         Users in ignore list
-    __userAdmin : LinuxUsers.SystemUserAdministration
+    __systemAdmin : UserAdministration.UserAdministration
         Linux user administration handler
     __domainAdmin : AzureAD.DomainUserAdministration
         Domain user synchronization handler
@@ -50,6 +50,7 @@ class AzureSyncHandler:
     __domainAdmin = None
     __systemUserGroupName = "azuread"
     __standardUserConfig = {}
+    __removePrincipalAffix = False
 
     def __init__(self, configFile="./config.cfg"):
         """
@@ -78,6 +79,7 @@ class AzureSyncHandler:
         self.__blockedUsers = config["Users"]["blockedPrincipals"].split(", ")
         self.__domainAdmin = DomainUserAdministration(config["Azure"]["clientId"], config["Azure"]["clientSecret"],
                                                       self.__blockedUsers)
+        self.__removePrincipalAffix = config["Azure"]["removePrincipalAffix"]
         if config.has_option("Windows"):
             if config.has_option("Linux"): raise Exception("Config file must not contain both Windows and Linux sections")
             from WindowsUsers import SystemUserAdministration
@@ -147,7 +149,7 @@ class AzureSyncHandler:
                     logging.error("A user under this name does not exist. Please check if user creation is successful manually")
                 except UserAlreadyExistsError:
                     logging.error("A user already exists under this name. Please make sure that the standard user grop name in config is correct")
-        #Get all linux users
+        #Get all system users
         systemAzureUsers = self.__systemAdmin.getUsersInGroup(self.__systemUserGroupName)
 
         #Check if user is to be deleted and delete
