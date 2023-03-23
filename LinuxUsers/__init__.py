@@ -118,7 +118,7 @@ class SystemUserAdministration(UserAdministration):
             groupnames.append(g["name"])
         return groupnames
 
-    def addUser(self, user, config={"-m": None}):
+    def addUser(self, user, password, config={"-m": None}):
         """
         Adds a user to the system
 
@@ -181,6 +181,8 @@ class SystemUserAdministration(UserAdministration):
         #Re-sync users and fetch userconfig for current user
         self.syncUsers()
         userconfig = ""
+
+        self.setUserPassword(user[1], password)
 
         #Execute post-user creation hook, defined in UserCreatedHooks.py
         for u in self._users:

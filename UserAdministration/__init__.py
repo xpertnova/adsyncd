@@ -166,6 +166,21 @@ class User:
             User does not exist, use this class only for existing users
         """
         self.__admin.removeUser(self._username)
+
+    def addToGroup(self, group):
+        """
+        Add user to group
+
+        Parameters
+        ----------
+        group : str
+            Name of group
+
+        Returns
+        -------
+        None
+        """
+        self.__admin.addUserToGroup(self._username, group)
 class UserNotExistingError(Exception):
     """
     Exception for when user does not exist

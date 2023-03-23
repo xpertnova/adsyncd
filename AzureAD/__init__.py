@@ -45,6 +45,7 @@ class DomainUserAdministration(UserAdministration):
     __clientSecret = ""
     __token = ""
     __ignoreList = []
+    __users = []
 
     def __init__(self, client_id, client_secret, ignore_list=[]):
         """
@@ -104,6 +105,7 @@ class DomainUserAdministration(UserAdministration):
             'Authorization': 'Bearer {}'.format(self.__token)
         }
         r = requests.get(url, headers=headers)
+        logging.info("Response: %s", r)
         result = r.json()
         try:
             userJson = result["value"]
@@ -112,7 +114,9 @@ class DomainUserAdministration(UserAdministration):
                 u["userPrincipalName"].replace("\n", "")
                 if not u["userPrincipalName"] in self.__ignoreList: users.append(
                     [u["displayName"], u["userPrincipalName"]])
-            self._users = users
+            logging.info("Fetched users: %s", users)
+            self.__users = users
+            logging.info(str(len(u)) + " Users retrieved")
         except:
             logging.error("Could not get AD users. Response: %s", result)
             logging.info("Trying again with new API token")
@@ -130,7 +134,7 @@ class DomainUserAdministration(UserAdministration):
         """
         self.syncUsers()
         users = []
-        for u in self._users:
+        for u in self.__users:
             users.append(u)
         return users
 

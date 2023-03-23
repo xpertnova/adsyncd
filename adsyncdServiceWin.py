@@ -9,6 +9,7 @@ import servicemanager
 import schedule
 import time
 import logging
+import traceback
 from logging.handlers import TimedRotatingFileHandler
 import configparser
 from AzureSyncHandler import AzureSyncHandler
@@ -34,34 +35,41 @@ class adsyncdService(win32serviceutil.ServiceFramework):
         servicemanager.LogInfoMsg("adsyncd - main exited")
     def stop(self):
         logging.info("Terminating service")
-    def main(self):
-        handler = AzureSyncHandler()
-        schedule.every(self.schedule_length).minutes.do(handler.syncUsers)
-        handler.syncUsers()
-        while True:
-            schedule.run_pending()
-            time.sleep(self.wait_length)
     def start(self):
-        config = configparser.ConfigParser()
-        config.read("C:\\Program Files\\adsyncd\\config.cfg")
         try:
-            self.schedule_length = int(config["Daemon"]["syncInterval"])
-            self.wait_length = int(config["Daemon"]["checkInterval"])
-            self.backup_count = int(config["Daemon"]["logBackupCount"])
+            config = configparser.ConfigParser()
+            config.read("C:\\Program Files\\adsyncd\\config.cfg")
+            try:
+                self.schedule_length = int(config["Daemon"]["syncInterval"])
+                self.wait_length = int(config["Daemon"]["checkInterval"])
+                self.backup_count = int(config["Daemon"]["logBackupCount"])
+            except Exception as e:
+                print("Error reading config: " + str(e))
+                sys.exit(1)
+            # Initializing logging
+            logHandler = TimedRotatingFileHandler(filename="C:\\Program Files\\adsyncd\\adsyncd.log", when="D", interval=1,
+                                                  backupCount=self.backup_count)
+            logging.basicConfig(handlers=[logHandler],
+                                format="%(asctime)s-%(process)d--%(levelname)s-%(message)s", level=logging.INFO)
+            logging.info("adsyncd for Windows Version 0.2")
+            servicemanager.LogInfoMsg("adsyncd for Windows Version 0.2")
+            logging.info("Service start successful")
+            servicemanager.LogInfoMsg("Service start successful")
+            logging.info("Setting up adsyncd")
+            servicemanager.LogInfoMsg("Setting up adsyncd")
+            handler = AzureSyncHandler(configFile="C:\\Program Files\\adsyncd\\config.cfg")
+            logging.info("Azure Sync Handler initialized")
+            schedule.every(self.schedule_length).minutes.do(handler.syncUsers)
+            logging.info("Scheduled syncUsers() every " + str(self.schedule_length) + " minutes")
+            handler.syncUsers()
+            while True:
+                logging.info("Running pending jobs")
+                schedule.run_pending()
+                time.sleep(self.wait_length)
         except Exception as e:
-            print("Error reading config: " + str(e))
+            logging.error(str(e))
+            logging.error(traceback.format_exc())
             sys.exit(1)
-        # Initializing logging
-        logHandler = TimedRotatingFileHandler(filename="/var/adsyncd/adsyncd.log", when="D", interval=1,
-                                              backupCount=self.backup_count)
-        logging.basicConfig(handlers=[logHandler],
-                            format="%(asctime)s-%(process)d--%(levelname)s-%(message)s", level=logging.INFO)
-        logging.info("adsyncd for Windows Version 0.2")
-        servicemanager.LogInfoMsg("adsyncd for Windows Version 0.2")
-        logging.info("Service start successful")
-        servicemanager.LogInfoMsg("Service start successful")
-        logging.info("Setting up adsyncd")
-        servicemanager.LogInfoMsg("Setting up adsyncd")
 
 if __name__ == '__main__':
     adsyncdService.parse_command_line()

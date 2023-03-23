@@ -50,7 +50,8 @@ class AzureSyncHandler:
     __domainAdmin = None
     __systemUserGroupName = "azuread"
     __standardUserConfig = {}
-    __removePrincipalAffix = False
+    __standardPassword = ""
+    __systemType = ""
 
     def __init__(self, configFile="./config.cfg"):
         """
@@ -79,20 +80,28 @@ class AzureSyncHandler:
         self.__blockedUsers = config["Users"]["blockedPrincipals"].split(", ")
         self.__domainAdmin = DomainUserAdministration(config["Azure"]["clientId"], config["Azure"]["clientSecret"],
                                                       self.__blockedUsers)
-        self.__removePrincipalAffix = config["Azure"]["removePrincipalAffix"]
-        if config.has_option("Windows"):
-            if config.has_option("Linux"): raise Exception("Config file must not contain both Windows and Linux sections")
+        if config.has_section("Windows"):
+            logging.info("Initializing Windows user handler")
+            if config.has_section("Linux"):
+                logging.error("Config file must not contain both Windows and Linux sections")
+                raise Exception("Config file must not contain both Windows and Linux sections")
             from WindowsUsers import SystemUserAdministration
+            self.__systemType = "Windows"
             self.__systemAdmin = SystemUserAdministration()
-            if config.has_option("Windows", "azureGroupName"): self.__systemUserGroupName = config["Linux"][
-                "azureGroupName"]
+            if config.has_option("Windows", "azureGroupName"):
+                self.__systemUserGroupName = config["Windows"]["azureGroupName"]
             if config.has_option("Windows", "standardUserConfig"):
                 self.__standardUserConfig = json.loads(config["Windows"]["standardUserConfig"])
             else:
-                self.__standardUserConfig = {"-m": None, "-g": self.__systemUserGroupName}
-
+                self.__standardUserConfig = {"CannotChangePassword": "$true", "PasswordNeverExpires": "$true", "Enabled": "$true", "ChangePasswordAtLogon": "$false", "UserCannotChangePassword": "$true"}
+            if config.has_option("Windows", "standardPassword"):
+                self.__standardPassword = config["Windows"]["standardPassword"]
+            else:
+                raise Exception("Standard password must be set in config file")
         else:
+            logging.info("Initializing Linux user handler")
             from LinuxUsers import SystemUserAdministration
+            self.__systemType = "Linux"
             linuxAdminConfig = {}
 
             #Set system file paths
@@ -107,6 +116,10 @@ class AzureSyncHandler:
             else: self.__standardUserConfig = {"-m": None, "-g": self.__systemUserGroupName}
             if ("-g" in self.__standardUserConfig and self.__standardUserConfig["-g"] != self.__systemUserGroupName) or ("-G" in self.__standardUserConfig and (self.__systemUserGroupName not in self.__standardUserConfig["-G"])): raise UserGroupNotInConfigError
             if "-g" in self.__standardUserConfig and "-G" in self.__standardUserConfig: raise InvalidUserConfigError
+            if config.has_option("Linux", "standardPassword"):
+                self.__standardPassword = config["Windows"]["standardPassword"]
+            else:
+                raise Exception("Standard password must be set in config file")
 
         logging.info("Sync handler initialized")
 
@@ -143,8 +156,8 @@ class AzureSyncHandler:
         for u in azureUsers:
             if u[1] not in systemUsers:
                 try:
-                    self.__systemAdmin.addUser(u, config=self.__standardUserConfig)
-                    self.__systemAdmin.setUserPassword(u[1], self.__config["Linux"]["standardPassword"])
+                    if self.__systemType == "Linux": self.__systemAdmin.addUser(u, self.__standardPassword, config=self.__standardUserConfig)
+                    else: self.__systemAdmin.addUser(u, self.__standardPassword, self.__systemUserGroupName, config=self.__standardUserConfig)
                 except UserNotExistingError:
                     logging.error("A user under this name does not exist. Please check if user creation is successful manually")
                 except UserAlreadyExistsError:

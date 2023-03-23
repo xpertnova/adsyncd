@@ -40,7 +40,7 @@ class SystemUserAdministration(UserAdministration):
         Returns list of all usernames
     getGroupnameList()
         Returns list of all group names
-    addUser(user, config={"-m": None})
+    addUser(user, password, config={})
         Adds a user to the system
     removeUser(username)
         Removes a user from the system
@@ -58,7 +58,7 @@ class SystemUserAdministration(UserAdministration):
         Adds a group to the system
     """
 
-    def __init__(self, DEBUG=False, RemovePrincipalAffix=False):
+    def __init__(self, DEBUG=False):
         """
         Constructor
 
@@ -75,7 +75,6 @@ class SystemUserAdministration(UserAdministration):
         """
         super().__init__()
         self.DEBUG = DEBUG
-        self._RemovePrincipalAffix = RemovePrincipalAffix
         logging.info(
             "System user administration for Windows initialized")
         self.syncUsers()
@@ -93,7 +92,7 @@ class SystemUserAdministration(UserAdministration):
         self.syncUsers()
         usernames = []
         for u in self._users:
-            usernames.append(u["username"])
+            usernames.append(u["Username"])
         return usernames
 
     def getGroupnameList(self):
@@ -111,7 +110,7 @@ class SystemUserAdministration(UserAdministration):
             groupnames.append(g["name"])
         return groupnames
 
-    def addUser(self, user, config={}):
+    def addUser(self, user, password, groupname, config={}):
         """
         Adds a user to the system
 
@@ -136,12 +135,28 @@ class SystemUserAdministration(UserAdministration):
         if user[1] in self.getUsernameList(): raise UserAlreadyExistsError(user[1])
 
         #Composing command
-        command = "New-ADUser -UserPrincipalName " + user[1] + " -DisplayName \"" + user[0] + " "
+        command = "New-ADUser -UserPrincipalName " + user[1] + " "
+        if user[0] and user[0] != "":
+            command = command + "-DisplayName \"" + user[0] + "\" -Name \"" + user[0] + "\" "
+        else:
+            command = command + "-DisplayName \"adsyncd User\" -Name \"adsyncd User\" "
+        command = command + "-AccountPassword (ConvertTo-SecureString -AsPlainText \"" + password + "\" -Force) "
         for option in config:
-            command = command + option + " "
+            command = command + "-" + option + " "
             if config[option] or config[option] != "": command = command + config[option] + " "
 
         #Execute command
+        if self.DEBUG:
+            print(command)
+        else:
+            subprocess.run(
+                ["powershell", "-Command", command])
+
+        #Add user to group
+        logging.info("Adding user " + user[1] + " to group " + groupname)
+        command = "Get-ADUser -Filter 'UserPrincipalName -eq \""+ user[1] + \
+                  "\"' | % {Add-ADGroupMember -Identity \"" + \
+                  groupname + "\" -Members $_}"
         if self.DEBUG:
             print(command)
         else:
@@ -242,11 +257,9 @@ class SystemUserAdministration(UserAdministration):
              "Get-ADPrincipalGroupMembership " + username +
              " | Select-Object name | ConvertTo-Json"],
             capture_output=True)
-        groups = json.loads(result)
+        groups = json.loads(result.stdout.decode(encoding='oem', errors='strict').strip())
         for group in groups:
             return_array.append(group["name"])
-        return return_array
-
         return return_array
 
     def getUsersInGroup(self, groupname):
@@ -272,9 +285,12 @@ class SystemUserAdministration(UserAdministration):
                      "Get-ADGroupMember " + groupname +
                      " | Get-ADUser | Select-Object UserPrincipalName | ConvertTo-Json"],
                     capture_output=True)
-                users = json.loads(result)
-                for user in users:
-                    return_array.append(user["UserPrincipalName"])
+                users = json.loads(result.stdout.decode(encoding='oem', errors='strict').strip())
+                if isinstance(users, list):
+                    for user in users:
+                        return_array.append(user["UserPrincipalName"])
+                else:
+                    return_array.append(users["UserPrincipalName"])
                 return return_array
         return []
 
@@ -292,7 +308,7 @@ class SystemUserAdministration(UserAdministration):
             ["powershell", "-Command",
              "Get-ADUser -Filter * | Select-Object UserPrincipalName, Enabled, Name | ConvertTo-Json"],
             capture_output=True)
-        users = json.loads(result)
+        users = json.loads(result.stdout.decode(encoding='oem', errors='strict').strip())
         if isinstance(users, list):
             for user in users:
                 self._users.append({"Username": user["UserPrincipalName"],
@@ -314,7 +330,7 @@ class SystemUserAdministration(UserAdministration):
         result = subprocess.run(
             ["powershell", "-Command", "Get-ADGroup -Filter * | Select-Object Name | ConvertTo-Json"],
             capture_output=True)
-        groups = json.loads(result)
+        groups = json.loads(result.stdout.decode(encoding='oem', errors='strict').strip())
         self.__groups = []
         if isinstance(groups, list):
             for group in groups:
