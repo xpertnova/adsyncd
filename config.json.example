@@ -1,0 +1,33 @@
+{
+    "azure": {
+        "clientId": "<YOUR_CLIENT_ID_HERE>",
+        "clientSecret": "<YOUR_CLIENT_SECRET_HERE>",
+        "azureADGroupID": "<YOUR_AZURE_AD_GROUP_HERE>"
+    },
+    "users": {
+        "ignoreList": []
+    },
+    "os": {
+        "type": "linux",
+        "userConfig": {
+            "-m": "",
+            "-k": "/home/shared",
+            "-s": "/usr/bin/bash",
+            "-G": "cdrom,dip,plugdev,azuread",
+            "-c": "$AD_USER_FULLNAME" //Will set the Azure AD fullname as GECOS string
+        },
+        "groupName": "azuread",
+        "password": "Xpertnova#1!"
+        //Useful for debugging purposes
+        // "sysFiles": {
+        //     "passwd": "./passwd",
+        //     "shadow": "./shadow",
+        //     "group": "./group"
+        // }
+    },
+    "daemon": {
+        "syncInterval": 10,
+        "checkInterval": 300,
+        "logBackupCount": 30
+    }
+}
