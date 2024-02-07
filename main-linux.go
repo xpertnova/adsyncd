@@ -37,7 +37,7 @@ func (p processLockFile) Unlock() error {
 var (
 	version     string
 	buildTime   string
-	buildHash   string
+	versionHash string
 	showVersion bool
 
 	triggerSync  bool
@@ -51,26 +51,45 @@ var (
 	killChannel   chan os.Signal
 	syncChannel   chan os.Signal
 	reloadChannel chan os.Signal
+
+	pidFilePath = "/var/run/adsyncd.pid"
 )
 
 func init() {
-	flag.StringVar(&ConfigFilePath, "c", "/var/adsyncd/adsyncd.conf", "Set the config file path")
+	flag.StringVar(&ConfigFilePath, "c", "./config.json", "Set the config file path")
 	flag.BoolVar(&showVersion, "version", false, "Show version")
 }
 
 func main() {
 	flag.Parse()
+	args := os.Args[1:]
+	if len(args) > 0 {
+		switch args[0] {
+		case "sync":
+			triggerSync = true
+		case "stop":
+			killRunning = true
+		case "reload":
+			reloadConfig = true
+		default:
+			log.Panicf("Unknown command: %s", args[0])
+		}
+	}
 	if showVersion {
 		fmt.Printf("adsyncd for Linux %s\n", version)
-		fmt.Printf("Build %s at %s\n", buildHash, buildTime)
+		fmt.Printf("Source code version %s built at %s\n", versionHash, buildTime)
 		os.Exit(0)
 	} else if triggerSync {
-
+		pid := getPIDFromFile()
+		syscall.Kill(pid, syscall.SIGUSR1)
 	} else if reloadConfig {
-
+		pid := getPIDFromFile()
+		syscall.Kill(pid, syscall.SIGUSR2)
 	} else if killRunning {
-
-	} else { //Declare context
+		pid := getPIDFromFile()
+		syscall.Kill(pid, syscall.SIGTERM)
+	} else {
+		//Declare context
 		ctx := context.Background()
 		ctx, cancel := context.WithCancel(ctx)
 		defer cancel()
@@ -87,7 +106,7 @@ func main() {
 		})
 
 		//Lock PID file
-		pidFile, err := acquirePIDLock("/var/run/adsyncd.pid")
+		pidFile, err := acquirePIDLock(pidFilePath)
 		if err != nil {
 			log.Fatalf("Could not lock PID file: %s", err)
 		}
@@ -145,6 +164,18 @@ func getConfig() config.Config {
 		log.Fatalf("Cannot read config file: %s", err)
 	}
 	return cfg
+}
+
+func getPIDFromFile() int {
+	f, err := os.ReadFile(pidFilePath)
+	if err != nil {
+		log.Panicf("Cannot read PID file at %s\nMake sure adsyncd is started and that you have sufficient permissions\n%+v", pidFilePath, err)
+	}
+	pid, err := strconv.Atoi(string(f))
+	if err != nil {
+		log.Panicf("PID in file %s seems to be invalid\nMake sure adsyncd is started and that you have sufficient permissions\n%+v", pidFilePath, err)
+	}
+	return pid
 }
 
 // Create a PID lock file to prevent multiple instances from running
