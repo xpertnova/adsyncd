@@ -96,26 +96,18 @@ func main() {
 
 		Config := getConfig()
 
-		//Initialize logging
-		log.SetOutput(&lumberjack.Logger{
-			Filename:   Config.DaeomonConfig.LogFilePath,
-			MaxSize:    Config.DaeomonConfig.LogBackupMaxSize,
-			MaxBackups: Config.DaeomonConfig.LogBackupCount,
-			MaxAge:     Config.DaeomonConfig.LogBackupMaxAge,
-			Compress:   Config.DaeomonConfig.UseLogCompression,
-		})
-
-		//Lock PID file
-		pidFile, err := acquirePIDLock(pidFilePath)
-		if err != nil {
-			log.Fatalf("Could not lock PID file: %s", err)
-		}
-		defer func() {
-			err := pidFile.Unlock()
+		if !Config.Debug { //Lock PID file
+			pidFile, err := acquirePIDLock(pidFilePath)
 			if err != nil {
-				log.Fatalf("Could not remove PID lock file: %s\nPlease make sure that adsyncd was terminated correctly and remove the PID file at /var/run/adsyncd.log")
+				log.Fatalf("Could not lock PID file: %s", err)
 			}
-		}()
+			defer func() {
+				err := pidFile.Unlock()
+				if err != nil {
+					log.Fatalf("Could not remove PID lock file: %s\nPlease make sure that adsyncd was terminated correctly and remove the PID file at /var/run/adsyncd.log")
+				}
+			}()
+		}
 
 		//Initialize signal channels
 		//It is easier to handle the three cases as seperate channels
@@ -129,6 +121,15 @@ func main() {
 		signal.Notify(killChannel, syscall.SIGTERM, syscall.SIGINT)
 		signal.Notify(syncChannel, syscall.SIGUSR1)
 		signal.Notify(reloadChannel, syscall.SIGUSR2)
+
+		//Initialize logging
+		log.SetOutput(&lumberjack.Logger{
+			Filename:   Config.DaeomonConfig.LogFilePath,
+			MaxSize:    Config.DaeomonConfig.LogBackupMaxSize,
+			MaxBackups: Config.DaeomonConfig.LogBackupCount,
+			MaxAge:     Config.DaeomonConfig.LogBackupMaxAge,
+			Compress:   Config.DaeomonConfig.UseLogCompression,
+		})
 
 		//Setup the sync timer and "bind" it to the syncChannel
 		go func() {

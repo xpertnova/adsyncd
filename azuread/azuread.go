@@ -2,13 +2,14 @@
 package azuread
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/xpertnova/adsyncd/config"
@@ -19,13 +20,6 @@ type AzureADSyncHandler struct {
 	token      string
 	httpClient http.Client
 	users      []AzureADUser
-}
-
-type authRequestData struct {
-	GrantType    string `json:"grant_type"`
-	ClientId     string `json:"client_id"`
-	Scope        string `json:"scope"`
-	ClientSecret string `json:"client_secret"`
 }
 
 type authRequestResponse struct {
@@ -45,17 +39,12 @@ type AzureADUser struct {
 // Requires valid clientId and clientSecret
 func (h *AzureADSyncHandler) fetchApiToken() error {
 	log.Printf("[AzureAD] Fetching Azure AD API Token")
-	data := authRequestData{
-		"client_credentials",
-		h.Config.ClientId,
-		"https://graph.microsoft.com/.default",
-		h.Config.ClientSecret}
-	marshalled, err := json.Marshal(data)
-	if err != nil {
-		log.Printf("[AzureAD] Cannot serialize request data: %s", err)
-		return fmt.Errorf("cannot serialize request data: %s", err)
-	}
-	req, err := http.NewRequest("POST", h.Config.AuthURL, bytes.NewReader(marshalled))
+	form := url.Values{}
+	form.Add("grant_type", "client_credentials")
+	form.Add("client_id", h.Config.ClientId)
+	form.Add("scope", "https://graph.microsoft.com/.default")
+	form.Add("client_secret", h.Config.ClientSecret)
+	req, err := http.NewRequest("POST", h.Config.AuthURL, strings.NewReader(form.Encode()))
 	if err != nil {
 		log.Printf("[AzureAD] Cannot build request: %s", err)
 		return fmt.Errorf("cannot build request: %s", err)

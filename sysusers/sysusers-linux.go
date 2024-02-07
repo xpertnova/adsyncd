@@ -24,8 +24,8 @@ type LinuxSystemAdmin struct {
 
 func New(c *config.LinuxConfig, debug bool) (*LinuxSystemAdmin, error) {
 	checkConfig(c)
-	a := LinuxSystemAdmin{nil, nil, c, debug}
-	log.Printf("Initializing Linux user handler")
+	a := LinuxSystemAdmin{map[string]*LinuxSystemGroup{}, map[string]*LinuxSystemUser{}, c, debug}
+	log.Printf("[LinuxAdmin] Initializing Linux user handler")
 	if err := a.SyncUsers(); err != nil {
 		return nil, err
 	}
@@ -40,7 +40,7 @@ func (a *LinuxSystemAdmin) SyncUsers() error {
 	users := a.users
 	passwdFile, err := os.Open(a.Config.SystemFiles.Passwd)
 	if err != nil {
-		log.Printf("Error opening passwd file: %s", err)
+		log.Printf("[LinuxAdmin] Error opening passwd file: %s", err)
 		return err
 	}
 	defer passwdFile.Close()
@@ -53,7 +53,7 @@ func (a *LinuxSystemAdmin) SyncUsers() error {
 		users[entries[0]] = user
 	}
 	if err := scanner.Err(); err != nil {
-		log.Printf("Error reading passwd file: %s", err)
+		log.Printf("[LinuxAdmin] Error reading passwd file: %s", err)
 		return err
 	}
 	for name, user := range users {
@@ -71,7 +71,7 @@ func (a *LinuxSystemAdmin) SyncGroups() error {
 	groups := a.groups
 	groupsFile, err := os.Open(a.Config.SystemFiles.Group)
 	if err != nil {
-		log.Printf("Error opening groups file: %s", err)
+		log.Printf("[LinuxAdmin] Error opening groups file: %s", err)
 		return err
 	}
 	defer groupsFile.Close()
@@ -88,7 +88,7 @@ func (a *LinuxSystemAdmin) SyncGroups() error {
 		groups[entries[0]] = group
 	}
 	if err := scanner.Err(); err != nil {
-		log.Printf("Error reading groups file: %s", err)
+		log.Printf("[LinuxAdmin] Error reading groups file: %s", err)
 		return err
 	}
 	for name, group := range groups {
@@ -138,7 +138,7 @@ func (a *LinuxSystemAdmin) AddUser(user NewUser) error {
 	}
 	if a.GroupExists(user.Username) {
 		if err := a.execCommand("groupdel " + user.Username); err != nil {
-			log.Printf("Error deleting user group with same name as user: %s", err)
+			log.Printf("[LinuxAdmin] Error deleting user group with same name as user: %s", err)
 			return err
 		}
 	}
@@ -155,7 +155,7 @@ func (a *LinuxSystemAdmin) AddUser(user NewUser) error {
 	}
 	command += user.Username
 	if err := a.execCommand(command); err != nil {
-		log.Printf("Error creating user: %s", err)
+		log.Printf("[LinuxAdmin] Error creating user: %s", err)
 		return err
 	}
 	a.SyncUsers()
@@ -164,16 +164,16 @@ func (a *LinuxSystemAdmin) AddUser(user NewUser) error {
 
 func (a *LinuxSystemAdmin) RemoveUser(user string) error {
 	a.SyncUsers()
-	log.Printf("Removing user " + user)
+	log.Printf("[LinuxAdmin] Removing user " + user)
 	if !a.UserExists(user) {
 		return &UserNotExistingError{Username: user, Msg: "User cannot be deleted because it doesn't exist"}
 	}
 	if err := a.execCommand("userdel -r " + user); err != nil {
-		log.Printf("Error deleting user: %s", err)
+		log.Printf("[LinuxAdmin] Error deleting user: %s", err)
 		return err
 	}
 	if err := a.execCommand("groupdel " + user); err != nil {
-		log.Printf("Error deleting group: %s", err)
+		log.Printf("[LinuxAdmin] Error deleting group: %s", err)
 		return err
 	}
 	return nil
@@ -188,7 +188,7 @@ func (a *LinuxSystemAdmin) SetUserPassword(user, password string) error {
 	modifyPasswd := false
 	passwdFile, err := os.OpenFile(a.Config.SystemFiles.Passwd, os.O_RDWR, 0)
 	if err != nil {
-		log.Printf("Error opening passwd file: %s", err)
+		log.Printf("[LinuxAdmin] Error opening passwd file: %s", err)
 		return err
 	}
 	defer passwdFile.Close()
@@ -220,50 +220,50 @@ func (a *LinuxSystemAdmin) SetUserPassword(user, password string) error {
 		lines = append(lines, entry)
 	}
 	if err := scanner.Err(); err != nil {
-		log.Printf("Error reading passwd file: %s", err)
+		log.Printf("[LinuxAdmin] Error reading passwd file: %s", err)
 		return err
 	}
 
 	if modifyPasswd {
 		_, err = passwdFile.Seek(0, 0)
 		if err != nil {
-			log.Printf("Error seeking to the beginning of the file: %s", err)
+			log.Printf("[LinuxAdmin] Error seeking to the beginning of the file: %s", err)
 			return err
 		}
 		if err := passwdFile.Truncate(0); err != nil {
-			log.Printf("Error truncating the file: %s", err)
+			log.Printf("[LinuxAdmin] Error truncating the file: %s", err)
 			return err
 		}
 		writer := bufio.NewWriter(passwdFile)
 		for _, line := range lines {
 			_, err := writer.WriteString(line)
 			if err != nil {
-				log.Printf("Error writing to passwd file: %s", err)
+				log.Printf("[LinuxAdmin] Error writing to passwd file: %s", err)
 				return err
 			}
 		}
 		if err := writer.Flush(); err != nil {
-			log.Printf("Error flushing file: %s", err)
+			log.Printf("[LinuxAdmin] Error flushing file: %s", err)
 			return err
 		}
 	}
 
 	salt, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		log.Printf("Error generating salt: %s", err)
+		log.Printf("[LinuxAdmin] Error generating salt: %s", err)
 		return err
 	}
 	saltString := string(salt)
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password+saltString), bcrypt.DefaultCost)
 	if err != nil {
-		log.Printf("Error generating hashed password: %s", err)
+		log.Printf("[LinuxAdmin] Error generating hashed password: %s", err)
 		return err
 	}
 	hashedPwString := string(hashedPassword)
 
 	shadowFile, err := os.OpenFile(a.Config.SystemFiles.Shadow, os.O_RDWR, 0)
 	if err != nil {
-		log.Printf("Error opening passwd file: %s", err)
+		log.Printf("[LinuxAdmin] Error opening passwd file: %s", err)
 		return err
 	}
 	defer shadowFile.Close()
@@ -289,17 +289,17 @@ func (a *LinuxSystemAdmin) SetUserPassword(user, password string) error {
 		shadowLines = append(shadowLines, entry)
 	}
 	if err := shadowScanner.Err(); err != nil {
-		log.Printf("Error reading shadow file: %s", err)
+		log.Printf("[LinuxAdmin] Error reading shadow file: %s", err)
 		return err
 	}
 
 	_, err = shadowFile.Seek(0, 0)
 	if err != nil {
-		log.Printf("Error seeking to the beginning of the file: %s", err)
+		log.Printf("[LinuxAdmin] Error seeking to the beginning of the file: %s", err)
 		return err
 	}
 	if err := shadowFile.Truncate(0); err != nil {
-		log.Printf("Error truncating the file: %s", err)
+		log.Printf("[LinuxAdmin] Error truncating the file: %s", err)
 		return err
 	}
 	shadowWriter := bufio.NewWriter(shadowFile)
@@ -311,7 +311,7 @@ func (a *LinuxSystemAdmin) SetUserPassword(user, password string) error {
 		}
 	}
 	if err := shadowWriter.Flush(); err != nil {
-		log.Printf("Error flushing file: %s", err)
+		log.Printf("[LinuxAdmin] Error flushing file: %s", err)
 		return err
 	}
 	return nil
@@ -329,7 +329,7 @@ func (a *LinuxSystemAdmin) GetGroupsForUsername(username string) []*LinuxSystemG
 
 func (a *LinuxSystemAdmin) AddGroup(groupname string) error {
 	a.SyncGroups()
-	log.Printf("Adding group %s with config %+v", groupname, a.Config.GroupConfig)
+	log.Printf("[LinuxAdmin] Adding group %s with config %+v", groupname, a.Config.GroupConfig)
 	if a.GroupExists(groupname) {
 		err := GroupAlreadyExistsError{Msg: "Group with name " + groupname + " already exists", Groupname: groupname}
 		return &err

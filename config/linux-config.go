@@ -5,7 +5,7 @@ package config
 type LinuxConfig struct {
 	UserConfig      map[string]string `json:"userConfig"`
 	GroupConfig     map[string]string `json:"groupConfig"`
-	GroupName       string            `json:"ADGroupName"`
+	GroupName       string            `json:"groupName"`
 	DefaultPassword string            `json:"defaultPassword"`
 	SystemFiles     LinuxSystemFiles  `json:"sysFiles"`
 }

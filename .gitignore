@@ -3,3 +3,7 @@
 /.idea/
 .vscode
 config.json
+group
+passwd
+shadow
+adsyncd
