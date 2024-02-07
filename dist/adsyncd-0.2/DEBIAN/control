@@ -1,9 +1,0 @@
-Package: adsyncd
-Version: 0.2
-Architecture: all
-Maintainer: Lovis König <lovis.koenig@xpertnova.de>
-Depends: python3.10
-Installed-Size: in_kb
-Homepage: https://github.com/xpertnova/adsyncd
-Description: Azure AD Synchronization Daemon
- Azure AD Synchronization Daemon Will automatically create or delete users with their respective Microsoft 365 handles.

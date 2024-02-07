@@ -2,9 +2,8 @@
     "azure": {
         "clientId": "<YOUR_CLIENT_ID_HERE>",
         "clientSecret": "<YOUR_CLIENT_SECRET_HERE>",
-        "azureADGroupID": "<YOUR_AZURE_AD_GROUP_HERE>"
-    },
-    "users": {
+        "azureADGroupId": "<YOUR_AZURE_AD_GROUP_HERE>",
+        "authUrl": "<YOUR_AUTH_URL_HERE>"
         "ignoreList": []
     },
     "os": {
@@ -26,8 +25,12 @@
         // }
     },
     "daemon": {
-        "syncInterval": 10,
-        "checkInterval": 300,
-        "logBackupCount": 30
+        "syncInterval": 600, //in seconds
+        //"checkInterval": 300, no longer needed
+        "logBackupCount": 30,
+        "logBackupMaxSize": 1, //in MB
+        "logFilePath": "/var/log/adsyncd/adsyncd.log",
+        "logBackupMaxAge": 28,
+        "useLogCompression": false,
     }
 }
